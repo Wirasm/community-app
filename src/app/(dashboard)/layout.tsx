@@ -27,6 +27,9 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
             <a href="/dashboard" className="font-semibold">
               Dashboard
             </a>
+            <a href="/explore" className="text-muted-foreground hover:text-foreground">
+              Communities
+            </a>
             <a href="/settings/profile" className="text-muted-foreground hover:text-foreground">
               Settings
             </a>

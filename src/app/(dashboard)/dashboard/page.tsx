@@ -1,11 +1,23 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/core/supabase/server";
+import { getCommunityCount } from "@/features/communities";
+import { getProfileByUserId } from "@/features/profiles";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  let communityCount = 0;
+  if (user) {
+    try {
+      const profile = await getProfileByUserId(user.id);
+      communityCount = await getCommunityCount(profile.profileId);
+    } catch {
+      // Profile may not exist yet
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -39,6 +51,30 @@ export default async function DashboardPage() {
                 </dd>
               </div>
             </dl>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Communities</CardTitle>
+            <CardDescription>Communities you own</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {communityCount > 0 ? (
+              <p className="text-sm text-muted-foreground">
+                You own {communityCount} communit{communityCount === 1 ? "y" : "ies"}.
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">No communities yet.</p>
+            )}
+            <div className="mt-4 flex gap-4">
+              <a href="/explore" className="text-sm text-primary hover:underline">
+                Explore &rarr;
+              </a>
+              <a href="/communities/new" className="text-sm text-primary hover:underline">
+                Create new &rarr;
+              </a>
+            </div>
           </CardContent>
         </Card>
       </div>

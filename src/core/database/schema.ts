@@ -64,3 +64,31 @@ export const profiles = pgTable("profiles", {
   platformRole: platformRoleEnum("platform_role").notNull().default("user"),
   ...timestamps,
 });
+
+/**
+ * Community visibility enum for access control.
+ */
+export const communityVisibilityEnum = pgEnum("community_visibility", [
+  "public",
+  "private",
+  "paid",
+]);
+
+/**
+ * Communities table - groups of users organized around shared interests.
+ */
+export const communities = pgTable("communities", {
+  communityId: uuid("community_id").primaryKey().defaultRandom(),
+  ownerId: uuid("owner_id")
+    .notNull()
+    .references(() => profiles.profileId, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  description: text("description"),
+  about: text("about"),
+  logoUrl: text("logo_url"),
+  bannerUrl: text("banner_url"),
+  visibility: communityVisibilityEnum("visibility").notNull().default("public"),
+  settings: jsonb("settings").$type<Record<string, unknown>>().default({}),
+  ...timestamps,
+});
