@@ -58,7 +58,18 @@ export async function countByCommunity(communityId: string): Promise<number> {
     .select({ count: count() })
     .from(memberships)
     .where(and(eq(memberships.communityId, communityId), eq(memberships.status, "active")));
-  return results[0]?.count ?? 0;
+
+  // Count query should always return exactly one row
+  const result = results[0];
+  if (results.length !== 1 || result === undefined) {
+    logger.error(
+      { communityId, resultCount: results.length },
+      "membership.count_unexpected_result",
+    );
+    return 0;
+  }
+
+  return result.count;
 }
 
 export async function create(data: NewMembership): Promise<Membership> {
@@ -86,11 +97,18 @@ export async function update(
   membershipId: string,
   data: Partial<Pick<Membership, "role" | "status">>,
 ): Promise<Membership | undefined> {
+  logger.info({ membershipId, updates: Object.keys(data) }, "membership.update_started");
+
   const results = await db
     .update(memberships)
     .set({ ...data, updatedAt: new Date() })
     .where(eq(memberships.membershipId, membershipId))
     .returning();
+
+  if (!results[0]) {
+    logger.warn({ membershipId }, "membership.update_no_rows_affected");
+  }
+
   return results[0];
 }
 
@@ -99,6 +117,11 @@ export async function deleteById(membershipId: string): Promise<boolean> {
     .delete(memberships)
     .where(eq(memberships.membershipId, membershipId))
     .returning();
+
+  if (results.length === 0) {
+    logger.warn({ membershipId }, "membership.delete_not_found");
+  }
+
   return results.length > 0;
 }
 

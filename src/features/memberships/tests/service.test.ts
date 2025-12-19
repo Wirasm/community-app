@@ -55,8 +55,18 @@ const mockRepository = {
 mock.module("../repository", () => mockRepository);
 
 // Import service after mocking
-const { getMembership, joinCommunity, leaveCommunity, updateMembership, removeMember, isMember } =
-  await import("../service");
+const {
+  getMembership,
+  getMembershipByProfileAndCommunity,
+  listCommunityMembers,
+  listActiveCommunityMembers,
+  getCommunityMemberCount,
+  joinCommunity,
+  leaveCommunity,
+  updateMembership,
+  removeMember,
+  isMember,
+} = await import("../service");
 
 describe("getMembership", () => {
   beforeEach(() => {
@@ -76,6 +86,106 @@ describe("getMembership", () => {
     mockRepository.findById.mockResolvedValue(undefined);
 
     await expect(getMembership("non-existent-id")).rejects.toThrow("Membership not found");
+  });
+});
+
+describe("getMembershipByProfileAndCommunity", () => {
+  beforeEach(() => {
+    mockRepository.findByProfileAndCommunity.mockReset();
+  });
+
+  it("returns membership when found", async () => {
+    mockRepository.findByProfileAndCommunity.mockResolvedValue(mockMembership);
+
+    const result = await getMembershipByProfileAndCommunity(
+      mockMembership.profileId,
+      mockMembership.communityId,
+    );
+
+    expect(result).toEqual(mockMembership);
+    expect(mockRepository.findByProfileAndCommunity).toHaveBeenCalledWith(
+      mockMembership.profileId,
+      mockMembership.communityId,
+    );
+  });
+
+  it("throws NotMemberError when not found", async () => {
+    mockRepository.findByProfileAndCommunity.mockResolvedValue(undefined);
+
+    await expect(
+      getMembershipByProfileAndCommunity("non-member", mockMembership.communityId),
+    ).rejects.toThrow("Not a member");
+  });
+});
+
+describe("listCommunityMembers", () => {
+  beforeEach(() => {
+    mockRepository.findByCommunity.mockReset();
+  });
+
+  it("returns all members for community", async () => {
+    const members = [mockMembership, adminMembership];
+    mockRepository.findByCommunity.mockResolvedValue(members);
+
+    const result = await listCommunityMembers(mockMembership.communityId);
+
+    expect(result).toEqual(members);
+    expect(mockRepository.findByCommunity).toHaveBeenCalledWith(mockMembership.communityId);
+  });
+
+  it("returns empty array when no members", async () => {
+    mockRepository.findByCommunity.mockResolvedValue([]);
+
+    const result = await listCommunityMembers(mockMembership.communityId);
+
+    expect(result).toEqual([]);
+  });
+});
+
+describe("listActiveCommunityMembers", () => {
+  beforeEach(() => {
+    mockRepository.findActiveByCommunity.mockReset();
+  });
+
+  it("returns active members for community", async () => {
+    const members = [mockMembership];
+    mockRepository.findActiveByCommunity.mockResolvedValue(members);
+
+    const result = await listActiveCommunityMembers(mockMembership.communityId);
+
+    expect(result).toEqual(members);
+    expect(mockRepository.findActiveByCommunity).toHaveBeenCalledWith(mockMembership.communityId);
+  });
+
+  it("returns empty array when no active members", async () => {
+    mockRepository.findActiveByCommunity.mockResolvedValue([]);
+
+    const result = await listActiveCommunityMembers(mockMembership.communityId);
+
+    expect(result).toEqual([]);
+  });
+});
+
+describe("getCommunityMemberCount", () => {
+  beforeEach(() => {
+    mockRepository.countByCommunity.mockReset();
+  });
+
+  it("returns member count for community", async () => {
+    mockRepository.countByCommunity.mockResolvedValue(42);
+
+    const result = await getCommunityMemberCount(mockMembership.communityId);
+
+    expect(result).toBe(42);
+    expect(mockRepository.countByCommunity).toHaveBeenCalledWith(mockMembership.communityId);
+  });
+
+  it("returns 0 when no members", async () => {
+    mockRepository.countByCommunity.mockResolvedValue(0);
+
+    const result = await getCommunityMemberCount(mockMembership.communityId);
+
+    expect(result).toBe(0);
   });
 });
 
@@ -109,6 +219,20 @@ describe("joinCommunity", () => {
     mockRepository.create.mockResolvedValue({ ...mockMembership, status: "pending" });
 
     await joinCommunity(mockMembership.profileId, mockMembership.communityId, "private");
+
+    expect(mockRepository.create).toHaveBeenCalledWith({
+      communityId: mockMembership.communityId,
+      profileId: mockMembership.profileId,
+      role: "member",
+      status: "pending",
+    });
+  });
+
+  it("creates membership with pending status for paid community", async () => {
+    mockRepository.findByProfileAndCommunity.mockResolvedValue(undefined);
+    mockRepository.create.mockResolvedValue({ ...mockMembership, status: "pending" });
+
+    await joinCommunity(mockMembership.profileId, mockMembership.communityId, "paid");
 
     expect(mockRepository.create).toHaveBeenCalledWith({
       communityId: mockMembership.communityId,
@@ -238,6 +362,21 @@ describe("updateMembership", () => {
       ),
     ).rejects.toThrow("Cannot assign role");
   });
+
+  it("throws MembershipNotFoundError when update returns undefined (race condition)", async () => {
+    mockRepository.findByProfileAndCommunity.mockResolvedValue(adminMembership);
+    mockRepository.findById.mockResolvedValue(mockMembership);
+    mockRepository.update.mockResolvedValue(undefined); // Simulate concurrent deletion
+
+    await expect(
+      updateMembership(
+        mockMembership.membershipId,
+        { role: "moderator" },
+        adminMembership.profileId,
+        mockMembership.communityId,
+      ),
+    ).rejects.toThrow("Membership not found");
+  });
 });
 
 describe("removeMember", () => {
@@ -272,6 +411,37 @@ describe("removeMember", () => {
         mockMembership.communityId,
       ),
     ).rejects.toThrow("Cannot modify the community owner");
+  });
+
+  it("throws MembershipNotFoundError when target membership not found", async () => {
+    mockRepository.findByProfileAndCommunity.mockResolvedValue(adminMembership);
+    mockRepository.findById.mockResolvedValue(undefined);
+
+    await expect(
+      removeMember("non-existent", adminMembership.profileId, mockMembership.communityId),
+    ).rejects.toThrow("Membership not found");
+  });
+
+  it("throws InsufficientPermissionsError when actor cannot manage target role", async () => {
+    const coOwnerMembership = { ...mockMembership, role: "co_owner" as const };
+    mockRepository.findByProfileAndCommunity.mockResolvedValue(adminMembership);
+    mockRepository.findById.mockResolvedValue(coOwnerMembership);
+
+    await expect(
+      removeMember(
+        coOwnerMembership.membershipId,
+        adminMembership.profileId,
+        mockMembership.communityId,
+      ),
+    ).rejects.toThrow("Insufficient permissions");
+  });
+
+  it("throws InsufficientPermissionsError when actor is not active member", async () => {
+    mockRepository.findByProfileAndCommunity.mockResolvedValue(undefined);
+
+    await expect(
+      removeMember(mockMembership.membershipId, "non-member", mockMembership.communityId),
+    ).rejects.toThrow("Insufficient permissions");
   });
 });
 
