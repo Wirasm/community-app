@@ -92,6 +92,19 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    4. Re-run review after fixes
    ```
 
+8. **Post Review to GitHub PR**
+
+   After generating the review summary, post it as a comment on the PR:
+
+   ```bash
+   gh pr comment <PR_NUMBER> --body "$(cat <<'EOF'
+   <review summary content>
+   EOF
+   )"
+   ```
+
+   This ensures the review is visible to all collaborators on the PR.
+
 ## Usage Examples:
 
 **Full review (default):**
@@ -204,3 +217,4 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 - Results are actionable with specific file:line references
 - Agents use appropriate models for their complexity
 - All agents available in `/agents` list
+- Review summary is automatically posted as a comment on the GitHub PR
