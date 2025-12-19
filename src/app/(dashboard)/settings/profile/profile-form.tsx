@@ -7,6 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useFileUpload } from "@/features/storage/hooks/use-file-upload";
+import { MAX_AVATAR_SIZE } from "@/features/storage/schemas";
+import { ImageUpload } from "@/shared/components/image-upload";
 
 import { type UpdateProfileState, updateProfileAction } from "./actions";
 
@@ -19,11 +22,29 @@ interface ProfileFormProps {
     bio: string | null;
     location: string | null;
     website: string | null;
+    avatarUrl: string | null;
   };
 }
 
 export function ProfileForm({ profile }: ProfileFormProps) {
   const [state, formAction, isPending] = useActionState(updateProfileAction, initialState);
+
+  const {
+    isUploading,
+    progress,
+    error: uploadError,
+    url: uploadedUrl,
+    upload,
+  } = useFileUpload({
+    maxSize: MAX_AVATAR_SIZE,
+  });
+
+  const handleAvatarUpload = async (file: File) => {
+    await upload("/api/upload/avatar", file);
+  };
+
+  // Use uploaded URL if available, otherwise use profile URL
+  const currentAvatarUrl = uploadedUrl ?? profile.avatarUrl;
 
   return (
     <Card>
@@ -43,6 +64,21 @@ export function ProfileForm({ profile }: ProfileFormProps) {
               Profile updated successfully!
             </div>
           )}
+
+          {/* Avatar Upload Section */}
+          <div className="flex flex-col gap-2">
+            <Label>Profile Photo</Label>
+            <ImageUpload
+              currentUrl={currentAvatarUrl}
+              onUpload={handleAvatarUpload}
+              isUploading={isUploading}
+              progress={progress}
+              error={uploadError}
+              maxSizeMB={MAX_AVATAR_SIZE / (1024 * 1024)}
+              aspectRatio="square"
+              disabled={isPending}
+            />
+          </div>
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="username">Username</Label>

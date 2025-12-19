@@ -38,6 +38,8 @@ export const UpdateCommunitySchema = z.object({
   about: z.string().max(10000, "About must be at most 10000 characters").optional(),
   visibility: z.enum(VISIBILITY_OPTIONS).optional(),
   settings: z.record(z.string(), z.unknown()).optional(),
+  logoUrl: z.string().url("Invalid URL format").optional(),
+  bannerUrl: z.string().url("Invalid URL format").optional(),
 });
 
 export type UpdateCommunityInput = z.infer<typeof UpdateCommunitySchema>;

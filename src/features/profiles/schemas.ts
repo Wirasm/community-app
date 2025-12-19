@@ -27,6 +27,8 @@ export const UpdateProfileSchema = z.object({
   location: z.string().max(100, "Location must be at most 100 characters").optional(),
   website: z.string().url("Invalid URL format").optional(),
   socialLinks: z.record(z.string(), z.string().url("Invalid URL format")).optional(),
+  avatarUrl: z.string().url("Invalid URL format").optional(),
+  bannerUrl: z.string().url("Invalid URL format").optional(),
 });
 
 export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>;
