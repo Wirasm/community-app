@@ -1,5 +1,7 @@
 import type { HttpStatusCode } from "@/core/api/errors";
 
+import type { CommunityRole } from "./schemas";
+
 /** Known error codes for membership operations. */
 export type MembershipErrorCode =
   | "MEMBERSHIP_NOT_FOUND"
@@ -62,7 +64,7 @@ export class OwnerCannotLeaveError extends MembershipError {
 }
 
 export class InvalidRoleAssignmentError extends MembershipError {
-  constructor(role: string) {
+  constructor(role: CommunityRole) {
     super(`Cannot assign role: ${role}`, "INVALID_ROLE_ASSIGNMENT", 403);
   }
 }

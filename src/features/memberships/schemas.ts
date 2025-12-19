@@ -23,7 +23,7 @@ export type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
 
 export const UpdateMembershipSchema = z.object({
   role: z.enum(ASSIGNABLE_ROLES).optional(),
-  status: z.enum(["active", "pending", "banned"]).optional(),
+  status: z.enum(MEMBERSHIP_STATUSES).optional(),
 });
 
 export type UpdateMembershipInput = z.infer<typeof UpdateMembershipSchema>;

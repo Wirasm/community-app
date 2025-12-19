@@ -95,7 +95,7 @@ export async function getCommunityMemberCount(communityId: string): Promise<numb
 /**
  * Join a community.
  * Public communities: status = active
- * Private communities: status = pending (requires approval)
+ * Private/Paid communities: status = pending (requires approval)
  */
 export async function joinCommunity(
   profileId: string,
@@ -266,7 +266,8 @@ export async function removeMember(
 }
 
 /**
- * Check if a profile is a member of a community.
+ * Check if a membership record exists for a profile in a community.
+ * Note: Returns true for any membership status (active, pending, or banned).
  */
 export async function isMember(profileId: string, communityId: string): Promise<boolean> {
   logger.info({ profileId, communityId }, "membership.check_started");
