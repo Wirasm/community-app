@@ -75,6 +75,22 @@ export const communityVisibilityEnum = pgEnum("community_visibility", [
 ]);
 
 /**
+ * Community role enum for membership role hierarchy.
+ */
+export const communityRoleEnum = pgEnum("community_role", [
+  "owner",
+  "co_owner",
+  "admin",
+  "moderator",
+  "member",
+]);
+
+/**
+ * Membership status enum for membership states.
+ */
+export const membershipStatusEnum = pgEnum("membership_status", ["active", "pending", "banned"]);
+
+/**
  * Communities table - groups of users organized around shared interests.
  */
 export const communities = pgTable("communities", {
@@ -90,5 +106,23 @@ export const communities = pgTable("communities", {
   bannerUrl: text("banner_url"),
   visibility: communityVisibilityEnum("visibility").notNull().default("public"),
   settings: jsonb("settings").$type<Record<string, unknown>>().default({}),
+  ...timestamps,
+});
+
+/**
+ * Memberships table - tracks user-community relationships with roles.
+ */
+export const memberships = pgTable("memberships", {
+  membershipId: uuid("membership_id").primaryKey().defaultRandom(),
+  communityId: uuid("community_id")
+    .notNull()
+    .references(() => communities.communityId, { onDelete: "cascade" }),
+  profileId: uuid("profile_id")
+    .notNull()
+    .references(() => profiles.profileId, { onDelete: "cascade" }),
+  role: communityRoleEnum("role").notNull().default("member"),
+  status: membershipStatusEnum("status").notNull().default("active"),
+  invitedByProfileId: uuid("invited_by_profile_id").references(() => profiles.profileId),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
   ...timestamps,
 });
