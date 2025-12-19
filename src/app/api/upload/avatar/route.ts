@@ -30,6 +30,10 @@ export async function POST(request: NextRequest) {
     const file = formData.get("file");
 
     if (!file || !(file instanceof File)) {
+      logger.warn(
+        { userId: user.id, hasFile: !!file, fileType: typeof file },
+        "upload.avatar_invalid_file",
+      );
       return NextResponse.json(createErrorResponse("No file provided", "VALIDATION_ERROR"), {
         status: 400,
       });

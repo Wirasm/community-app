@@ -36,6 +36,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const file = formData.get("file");
 
     if (!file || !(file instanceof File)) {
+      logger.warn(
+        { userId: user.id, slug, hasFile: !!file, fileType: typeof file },
+        "upload.community_banner_invalid_file",
+      );
       return NextResponse.json(createErrorResponse("No file provided", "VALIDATION_ERROR"), {
         status: 400,
       });

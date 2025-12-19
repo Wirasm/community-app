@@ -8,7 +8,8 @@ export {
   StorageNotAuthorizedError,
   UploadFailedError,
 } from "./errors";
-
+// Hooks (client-side)
+export { useFileUpload } from "./hooks/use-file-upload";
 // Types and Schemas
 export type { AllowedImageType } from "./schemas";
 export {
@@ -20,8 +21,8 @@ export {
   MAX_AVATAR_SIZE,
   MAX_COMMUNITY_IMAGE_SIZE,
 } from "./schemas";
-
 // Service functions (public API)
+export type { DeleteResult } from "./service";
 export {
   deleteAvatar,
   deleteCommunityImage,

@@ -1,7 +1,12 @@
 import { getLogger } from "@/core/logging";
 import { createClient } from "@/core/supabase/server";
 
-import { FileTooLargeError, InvalidFileTypeError, UploadFailedError } from "./errors";
+import {
+  DeleteFailedError,
+  FileTooLargeError,
+  InvalidFileTypeError,
+  UploadFailedError,
+} from "./errors";
 import {
   ALLOWED_IMAGE_TYPES,
   BUCKET_AVATARS,
@@ -13,6 +18,12 @@ import {
 } from "./schemas";
 
 const logger = getLogger("storage.service");
+
+/** Result of a delete operation */
+export interface DeleteResult {
+  success: boolean;
+  error?: string;
+}
 
 /**
  * Validate file size and type.
@@ -28,15 +39,16 @@ function validateFile(file: File, maxSize: number, allowedTypes: readonly string
 
 /**
  * Delete all files in a folder within a bucket.
+ * Returns a result indicating success or failure instead of throwing.
  */
-async function deleteFolder(bucket: string, folderPath: string): Promise<void> {
+async function deleteFolder(bucket: string, folderPath: string): Promise<DeleteResult> {
   const supabase = await createClient();
 
   const { data: files, error: listError } = await supabase.storage.from(bucket).list(folderPath);
 
   if (listError) {
-    logger.warn({ bucket, folderPath, error: listError.message }, "storage.list_failed");
-    return; // Non-fatal: folder might not exist
+    logger.error({ bucket, folderPath, error: listError.message }, "storage.list_failed");
+    return { success: false, error: `Failed to list files: ${listError.message}` };
   }
 
   if (files && files.length > 0) {
@@ -44,12 +56,16 @@ async function deleteFolder(bucket: string, folderPath: string): Promise<void> {
     const { error: deleteError } = await supabase.storage.from(bucket).remove(filePaths);
 
     if (deleteError) {
-      logger.warn({ bucket, filePaths, error: deleteError.message }, "storage.delete_failed");
-      // Non-fatal: continue with upload
-    } else {
-      logger.info({ bucket, count: filePaths.length }, "storage.old_files_deleted");
+      logger.error(
+        { bucket, folderPath, filePaths, error: deleteError.message },
+        "storage.delete_failed",
+      );
+      return { success: false, error: `Failed to delete files: ${deleteError.message}` };
     }
+    logger.info({ bucket, count: filePaths.length }, "storage.old_files_deleted");
   }
+
+  return { success: true };
 }
 
 /**
@@ -146,17 +162,24 @@ export async function uploadCommunityImage(
 
 /**
  * Delete a user's avatar folder.
+ * Throws DeleteFailedError if the operation fails.
  */
 export async function deleteAvatar(profileId: string): Promise<void> {
   logger.info({ profileId }, "storage.delete_avatar_started");
 
-  await deleteFolder(BUCKET_AVATARS, profileId);
+  const result = await deleteFolder(BUCKET_AVATARS, profileId);
+
+  if (!result.success) {
+    logger.error({ profileId, error: result.error }, "storage.delete_avatar_failed");
+    throw new DeleteFailedError(result.error ?? "Unknown error");
+  }
 
   logger.info({ profileId }, "storage.delete_avatar_completed");
 }
 
 /**
  * Delete a community image folder.
+ * Throws DeleteFailedError if the operation fails.
  */
 export async function deleteCommunityImage(
   communityId: string,
@@ -164,7 +187,15 @@ export async function deleteCommunityImage(
 ): Promise<void> {
   logger.info({ communityId, imageType }, "storage.delete_community_image_started");
 
-  await deleteFolder(BUCKET_COMMUNITIES, `${communityId}/${imageType}`);
+  const result = await deleteFolder(BUCKET_COMMUNITIES, `${communityId}/${imageType}`);
+
+  if (!result.success) {
+    logger.error(
+      { communityId, imageType, error: result.error },
+      "storage.delete_community_image_failed",
+    );
+    throw new DeleteFailedError(result.error ?? "Unknown error");
+  }
 
   logger.info({ communityId, imageType }, "storage.delete_community_image_completed");
 }

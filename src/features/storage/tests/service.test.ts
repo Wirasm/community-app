@@ -3,12 +3,15 @@ import { beforeEach, describe, expect, it, mock } from "bun:test";
 // Types for mock return values
 type UploadResult = { data: { path: string } | null; error: { message: string } | null };
 type ListResult = { data: { name: string }[] | null; error: { message: string } | null };
+type RemoveResult = { data: null; error: { message: string } | null };
 
 // Mock Supabase storage responses
 const mockUpload = mock<() => Promise<UploadResult>>(() =>
   Promise.resolve({ data: { path: "test-profile-id/123456789.jpg" }, error: null }),
 );
-const mockRemove = mock(() => Promise.resolve({ data: null, error: null }));
+const mockRemove = mock<() => Promise<RemoveResult>>(() =>
+  Promise.resolve({ data: null, error: null }),
+);
 const mockList = mock<() => Promise<ListResult>>(() => Promise.resolve({ data: [], error: null }));
 const mockGetPublicUrl = mock(() => ({
   data: { publicUrl: "https://example.supabase.co/storage/v1/object/public/avatars/test.jpg" },
@@ -30,8 +33,10 @@ mock.module("@/core/supabase/server", () => ({
 }));
 
 // Import after mocking
-const { uploadAvatar, uploadCommunityImage, deleteAvatar } = await import("../service");
-const { FileTooLargeError, InvalidFileTypeError, UploadFailedError } = await import("../errors");
+const { uploadAvatar, uploadCommunityImage, deleteAvatar, deleteCommunityImage, getPublicUrl } =
+  await import("../service");
+const { FileTooLargeError, InvalidFileTypeError, UploadFailedError, DeleteFailedError } =
+  await import("../errors");
 const { MAX_AVATAR_SIZE, MAX_COMMUNITY_IMAGE_SIZE } = await import("../schemas");
 
 // Helper to create mock File
@@ -135,6 +140,24 @@ describe("uploadCommunityImage", () => {
 
     await expect(uploadCommunityImage("comm-id", "logo", file)).rejects.toThrow(FileTooLargeError);
   });
+
+  it("throws InvalidFileTypeError for disallowed types", async () => {
+    const file = createMockFile("logo.gif", 1024, "image/gif");
+
+    await expect(uploadCommunityImage("comm-id", "logo", file)).rejects.toThrow(
+      InvalidFileTypeError,
+    );
+  });
+
+  it("throws UploadFailedError when Supabase upload fails", async () => {
+    mockUpload.mockImplementation(() =>
+      Promise.resolve({ data: null, error: { message: "Storage error" } }),
+    );
+
+    const file = createMockFile("logo.jpg", 1024, "image/jpeg");
+
+    await expect(uploadCommunityImage("comm-id", "logo", file)).rejects.toThrow(UploadFailedError);
+  });
 });
 
 describe("deleteAvatar", () => {
@@ -146,6 +169,7 @@ describe("deleteAvatar", () => {
     mockList.mockImplementation(() =>
       Promise.resolve({ data: [{ name: "avatar.jpg" }], error: null }),
     );
+    mockRemove.mockImplementation(() => Promise.resolve({ data: null, error: null }));
   });
 
   it("deletes files in avatar folder", async () => {
@@ -153,6 +177,97 @@ describe("deleteAvatar", () => {
 
     expect(mockStorageFrom).toHaveBeenCalledWith("avatars");
     expect(mockList).toHaveBeenCalled();
-    expect(mockRemove).toHaveBeenCalled();
+    expect(mockRemove).toHaveBeenCalledWith(["test-profile-id/avatar.jpg"]);
+  });
+
+  it("succeeds when folder is empty", async () => {
+    mockList.mockImplementation(() => Promise.resolve({ data: [], error: null }));
+
+    await expect(deleteAvatar("test-profile-id")).resolves.toBeUndefined();
+    expect(mockRemove).not.toHaveBeenCalled();
+  });
+
+  it("throws DeleteFailedError when list fails", async () => {
+    mockList.mockImplementation(() =>
+      Promise.resolve({ data: null, error: { message: "List failed" } }),
+    );
+
+    await expect(deleteAvatar("test-profile-id")).rejects.toThrow(DeleteFailedError);
+  });
+
+  it("throws DeleteFailedError when remove fails", async () => {
+    mockRemove.mockImplementation(() =>
+      Promise.resolve({ data: null, error: { message: "Remove failed" } }),
+    );
+
+    await expect(deleteAvatar("test-profile-id")).rejects.toThrow(DeleteFailedError);
+  });
+});
+
+describe("deleteCommunityImage", () => {
+  beforeEach(() => {
+    mockList.mockClear();
+    mockRemove.mockClear();
+    mockStorageFrom.mockClear();
+
+    mockList.mockImplementation(() =>
+      Promise.resolve({ data: [{ name: "logo.jpg" }], error: null }),
+    );
+    mockRemove.mockImplementation(() => Promise.resolve({ data: null, error: null }));
+  });
+
+  it("deletes logo folder for community", async () => {
+    await deleteCommunityImage("comm-id", "logo");
+
+    expect(mockStorageFrom).toHaveBeenCalledWith("communities");
+    expect(mockList).toHaveBeenCalled();
+    expect(mockRemove).toHaveBeenCalledWith(["comm-id/logo/logo.jpg"]);
+  });
+
+  it("deletes banner folder for community", async () => {
+    mockList.mockImplementation(() =>
+      Promise.resolve({ data: [{ name: "banner.png" }], error: null }),
+    );
+
+    await deleteCommunityImage("comm-id", "banner");
+
+    expect(mockRemove).toHaveBeenCalledWith(["comm-id/banner/banner.png"]);
+  });
+
+  it("throws DeleteFailedError when list fails", async () => {
+    mockList.mockImplementation(() =>
+      Promise.resolve({ data: null, error: { message: "List failed" } }),
+    );
+
+    await expect(deleteCommunityImage("comm-id", "logo")).rejects.toThrow(DeleteFailedError);
+  });
+
+  it("throws DeleteFailedError when remove fails", async () => {
+    mockRemove.mockImplementation(() =>
+      Promise.resolve({ data: null, error: { message: "Remove failed" } }),
+    );
+
+    await expect(deleteCommunityImage("comm-id", "banner")).rejects.toThrow(DeleteFailedError);
+  });
+});
+
+describe("getPublicUrl", () => {
+  beforeEach(() => {
+    mockStorageFrom.mockClear();
+    mockGetPublicUrl.mockClear();
+  });
+
+  it("returns public URL for file in avatars bucket", async () => {
+    const url = await getPublicUrl("avatars", "profile-123/image.jpg");
+
+    expect(mockStorageFrom).toHaveBeenCalledWith("avatars");
+    expect(url).toContain("supabase.co");
+  });
+
+  it("returns public URL for file in communities bucket", async () => {
+    const url = await getPublicUrl("communities", "comm-id/logo/image.png");
+
+    expect(mockStorageFrom).toHaveBeenCalledWith("communities");
+    expect(url).toContain("supabase.co");
   });
 });
