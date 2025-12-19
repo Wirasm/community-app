@@ -2,6 +2,7 @@
 export type { MembershipErrorCode } from "./errors";
 export {
   AlreadyMemberError,
+  BannedUserError,
   CannotModifyOwnerError,
   InsufficientPermissionsError,
   InvalidRoleAssignmentError,
@@ -25,6 +26,7 @@ export {
 export type {
   AssignableRole,
   CommunityRole,
+  ListMembersQuery,
   MembershipResponse,
   MembershipStatus,
   TransferOwnershipInput,
@@ -33,6 +35,7 @@ export type {
 export {
   ASSIGNABLE_ROLES,
   COMMUNITY_ROLES,
+  ListMembersQuerySchema,
   MEMBERSHIP_STATUSES,
   MembershipResponseSchema,
   ROLE_HIERARCHY,
@@ -50,6 +53,8 @@ export {
   leaveCommunity,
   listActiveCommunityMembers,
   listCommunityMembers,
+  listCommunityMembersPaginated,
   removeMember,
+  transferOwnership,
   updateMembership,
 } from "./service";
