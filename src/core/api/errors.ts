@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod/v4";
 
 import { getLogger } from "@/core/logging";
+import { ProfileError } from "@/features/profiles";
 import { ProjectError } from "@/features/projects";
 import { createErrorResponse, type ErrorResponse } from "@/shared/schemas/errors";
 
@@ -96,5 +97,5 @@ export function unauthorizedResponse(): NextResponse<ErrorResponse> {
   });
 }
 
-// Re-export ProjectError for type checking in other modules
-export { ProjectError };
+// Re-export errors for type checking in other modules
+export { ProfileError, ProjectError };
