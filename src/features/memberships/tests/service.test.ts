@@ -66,7 +66,22 @@ const {
   updateMembership,
   removeMember,
   isMember,
+  transferOwnership,
 } = await import("../service");
+
+const bannedMembership: Membership = {
+  ...mockMembership,
+  membershipId: "550e8400-e29b-41d4-a716-446655440012",
+  profileId: "550e8400-e29b-41d4-a716-446655440005",
+  status: "banned",
+};
+
+const coOwnerMembership: Membership = {
+  ...mockMembership,
+  membershipId: "550e8400-e29b-41d4-a716-446655440013",
+  profileId: "550e8400-e29b-41d4-a716-446655440006",
+  role: "co_owner",
+};
 
 describe("getMembership", () => {
   beforeEach(() => {
@@ -464,5 +479,187 @@ describe("isMember", () => {
     const result = await isMember("non-member", mockMembership.communityId);
 
     expect(result).toBe(false);
+  });
+});
+
+describe("getMembershipByProfileAndCommunity - banned user handling", () => {
+  beforeEach(() => {
+    mockRepository.findByProfileAndCommunity.mockReset();
+  });
+
+  it("throws BannedUserError when user is banned", async () => {
+    mockRepository.findByProfileAndCommunity.mockResolvedValue(bannedMembership);
+
+    await expect(
+      getMembershipByProfileAndCommunity(bannedMembership.profileId, bannedMembership.communityId),
+    ).rejects.toThrow("User is banned");
+  });
+
+  it("returns membership when banned user with throwOnBanned: false", async () => {
+    mockRepository.findByProfileAndCommunity.mockResolvedValue(bannedMembership);
+
+    const result = await getMembershipByProfileAndCommunity(
+      bannedMembership.profileId,
+      bannedMembership.communityId,
+      { throwOnBanned: false },
+    );
+
+    expect(result).toEqual(bannedMembership);
+  });
+});
+
+describe("leaveCommunity - delete failure handling", () => {
+  beforeEach(() => {
+    mockRepository.findByProfileAndCommunity.mockReset();
+    mockRepository.deleteById.mockReset();
+  });
+
+  it("throws MembershipDeleteFailedError when delete returns false", async () => {
+    mockRepository.findByProfileAndCommunity.mockResolvedValue(mockMembership);
+    mockRepository.deleteById.mockResolvedValue(false);
+
+    await expect(
+      leaveCommunity(mockMembership.profileId, mockMembership.communityId),
+    ).rejects.toThrow("Failed to delete membership");
+  });
+});
+
+describe("removeMember - delete failure handling", () => {
+  beforeEach(() => {
+    mockRepository.findByProfileAndCommunity.mockReset();
+    mockRepository.findById.mockReset();
+    mockRepository.deleteById.mockReset();
+  });
+
+  it("throws MembershipDeleteFailedError when delete returns false", async () => {
+    mockRepository.findByProfileAndCommunity.mockResolvedValue(adminMembership);
+    mockRepository.findById.mockResolvedValue(mockMembership);
+    mockRepository.deleteById.mockResolvedValue(false);
+
+    await expect(
+      removeMember(
+        mockMembership.membershipId,
+        adminMembership.profileId,
+        mockMembership.communityId,
+      ),
+    ).rejects.toThrow("Failed to delete membership");
+  });
+});
+
+describe("transferOwnership", () => {
+  beforeEach(() => {
+    mockRepository.findByProfileAndCommunity.mockReset();
+    mockRepository.update.mockReset();
+  });
+
+  it("transfers ownership correctly, demoting old owner to co_owner", async () => {
+    const updatedOldOwner = { ...ownerMembership, role: "co_owner" as const };
+    const updatedNewOwner = { ...coOwnerMembership, role: "owner" as const };
+
+    // First call returns owner, second call returns target member
+    mockRepository.findByProfileAndCommunity
+      .mockResolvedValueOnce(ownerMembership)
+      .mockResolvedValueOnce(coOwnerMembership);
+    mockRepository.update
+      .mockResolvedValueOnce(updatedOldOwner)
+      .mockResolvedValueOnce(updatedNewOwner);
+
+    const result = await transferOwnership(
+      mockMembership.communityId,
+      ownerMembership.profileId,
+      coOwnerMembership.profileId,
+    );
+
+    expect(result.oldOwnerMembership.role).toBe("co_owner");
+    expect(result.newOwnerMembership.role).toBe("owner");
+    expect(mockRepository.update).toHaveBeenCalledWith(ownerMembership.membershipId, {
+      role: "co_owner",
+    });
+    expect(mockRepository.update).toHaveBeenCalledWith(coOwnerMembership.membershipId, {
+      role: "owner",
+    });
+  });
+
+  it("throws NotMemberError when current owner is not a member", async () => {
+    mockRepository.findByProfileAndCommunity.mockResolvedValue(undefined);
+
+    await expect(
+      transferOwnership(
+        mockMembership.communityId,
+        ownerMembership.profileId,
+        coOwnerMembership.profileId,
+      ),
+    ).rejects.toThrow("Not a member");
+  });
+
+  it("throws InsufficientPermissionsError when caller is not owner", async () => {
+    // Return a non-owner membership for the current owner check
+    mockRepository.findByProfileAndCommunity.mockResolvedValue(adminMembership);
+
+    await expect(
+      transferOwnership(
+        mockMembership.communityId,
+        adminMembership.profileId,
+        coOwnerMembership.profileId,
+      ),
+    ).rejects.toThrow("Insufficient permissions");
+  });
+
+  it("throws NotMemberError when new owner is not a member", async () => {
+    mockRepository.findByProfileAndCommunity
+      .mockResolvedValueOnce(ownerMembership)
+      .mockResolvedValueOnce(undefined);
+
+    await expect(
+      transferOwnership(
+        mockMembership.communityId,
+        ownerMembership.profileId,
+        "non-member-profile-id",
+      ),
+    ).rejects.toThrow("Not a member");
+  });
+
+  it("throws InsufficientPermissionsError when new owner is not active", async () => {
+    const pendingMembership = { ...coOwnerMembership, status: "pending" as const };
+    mockRepository.findByProfileAndCommunity
+      .mockResolvedValueOnce(ownerMembership)
+      .mockResolvedValueOnce(pendingMembership);
+
+    await expect(
+      transferOwnership(
+        mockMembership.communityId,
+        ownerMembership.profileId,
+        pendingMembership.profileId,
+      ),
+    ).rejects.toThrow("Insufficient permissions");
+  });
+
+  it("throws InsufficientPermissionsError when new owner is banned", async () => {
+    mockRepository.findByProfileAndCommunity
+      .mockResolvedValueOnce(ownerMembership)
+      .mockResolvedValueOnce(bannedMembership);
+
+    await expect(
+      transferOwnership(
+        mockMembership.communityId,
+        ownerMembership.profileId,
+        bannedMembership.profileId,
+      ),
+    ).rejects.toThrow("Insufficient permissions");
+  });
+
+  it("throws OwnershipTransferFailedError when update fails", async () => {
+    mockRepository.findByProfileAndCommunity
+      .mockResolvedValueOnce(ownerMembership)
+      .mockResolvedValueOnce(coOwnerMembership);
+    mockRepository.update.mockResolvedValue(undefined);
+
+    await expect(
+      transferOwnership(
+        mockMembership.communityId,
+        ownerMembership.profileId,
+        coOwnerMembership.profileId,
+      ),
+    ).rejects.toThrow("Failed to transfer ownership");
   });
 });

@@ -108,10 +108,14 @@ mock.module("@/features/memberships", () => ({
   AlreadyMemberError: class extends Error {},
   BannedUserError: class extends Error {},
   CannotModifyOwnerError: class extends Error {},
+  DatabaseError: class extends Error {},
   InvalidRoleAssignmentError: class extends Error {},
+  MembershipCreationFailedError: class extends Error {},
+  MembershipDeleteFailedError: class extends Error {},
   MembershipNotFoundError: class extends Error {},
   NotMemberError: class extends Error {},
   OwnerCannotLeaveError: class extends Error {},
+  OwnershipTransferFailedError: class extends Error {},
 }));
 
 // Import routes after mocking
