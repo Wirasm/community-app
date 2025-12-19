@@ -34,7 +34,7 @@ const {
 } = await import("../service");
 
 const mockProfile: Profile = {
-  id: "550e8400-e29b-41d4-a716-446655440000",
+  profileId: "550e8400-e29b-41d4-a716-446655440000",
   userId: "550e8400-e29b-41d4-a716-446655440001",
   username: "johndoe",
   displayName: "John Doe",
@@ -60,10 +60,10 @@ describe("getProfile", () => {
   it("returns profile when found", async () => {
     mockRepository.findById.mockResolvedValue(mockProfile);
 
-    const result = await getProfile(mockProfile.id);
+    const result = await getProfile(mockProfile.profileId);
 
     expect(result).toEqual(mockProfile);
-    expect(mockRepository.findById).toHaveBeenCalledWith(mockProfile.id);
+    expect(mockRepository.findById).toHaveBeenCalledWith(mockProfile.profileId);
   });
 
   it("throws ProfileNotFoundError when profile does not exist", async () => {
@@ -127,7 +127,11 @@ describe("updateProfile", () => {
     mockRepository.findById.mockResolvedValue(mockProfile);
     mockRepository.update.mockResolvedValue(updatedProfile);
 
-    const result = await updateProfile(mockProfile.id, { displayName: "Updated Name" }, ownerId);
+    const result = await updateProfile(
+      mockProfile.profileId,
+      { displayName: "Updated Name" },
+      ownerId,
+    );
 
     expect(result.displayName).toBe("Updated Name");
   });
@@ -144,7 +148,7 @@ describe("updateProfile", () => {
     mockRepository.findById.mockResolvedValue(mockProfile);
 
     await expect(
-      updateProfile(mockProfile.id, { displayName: "New Name" }, otherUserId),
+      updateProfile(mockProfile.profileId, { displayName: "New Name" }, otherUserId),
     ).rejects.toThrow("Access denied");
   });
 
@@ -152,9 +156,9 @@ describe("updateProfile", () => {
     mockRepository.findById.mockResolvedValue(mockProfile);
     mockRepository.usernameExists.mockResolvedValue(true);
 
-    await expect(updateProfile(mockProfile.id, { username: "taken" }, ownerId)).rejects.toThrow(
-      "Username already exists",
-    );
+    await expect(
+      updateProfile(mockProfile.profileId, { username: "taken" }, ownerId),
+    ).rejects.toThrow("Username already exists");
   });
 
   it("allows updating username when it is available", async () => {
@@ -163,10 +167,10 @@ describe("updateProfile", () => {
     mockRepository.usernameExists.mockResolvedValue(false);
     mockRepository.update.mockResolvedValue(updatedProfile);
 
-    const result = await updateProfile(mockProfile.id, { username: "newname" }, ownerId);
+    const result = await updateProfile(mockProfile.profileId, { username: "newname" }, ownerId);
 
     expect(result.username).toBe("newname");
-    expect(mockRepository.usernameExists).toHaveBeenCalledWith("newname", mockProfile.id);
+    expect(mockRepository.usernameExists).toHaveBeenCalledWith("newname", mockProfile.profileId);
   });
 
   it("skips username check when username is not changing", async () => {
@@ -174,7 +178,7 @@ describe("updateProfile", () => {
     mockRepository.findById.mockResolvedValue(mockProfile);
     mockRepository.update.mockResolvedValue(updatedProfile);
 
-    const result = await updateProfile(mockProfile.id, { bio: "New bio" }, ownerId);
+    const result = await updateProfile(mockProfile.profileId, { bio: "New bio" }, ownerId);
 
     expect(result.bio).toBe("New bio");
     expect(mockRepository.usernameExists).not.toHaveBeenCalled();
@@ -185,7 +189,7 @@ describe("updateProfile", () => {
     mockRepository.update.mockResolvedValue(undefined);
 
     await expect(
-      updateProfile(mockProfile.id, { displayName: "New Name" }, ownerId),
+      updateProfile(mockProfile.profileId, { displayName: "New Name" }, ownerId),
     ).rejects.toThrow("Profile not found");
   });
 });
@@ -215,8 +219,8 @@ describe("checkUsernameAvailable", () => {
   it("passes excludeProfileId when provided", async () => {
     mockRepository.usernameExists.mockResolvedValue(false);
 
-    await checkUsernameAvailable("myusername", mockProfile.id);
+    await checkUsernameAvailable("myusername", mockProfile.profileId);
 
-    expect(mockRepository.usernameExists).toHaveBeenCalledWith("myusername", mockProfile.id);
+    expect(mockRepository.usernameExists).toHaveBeenCalledWith("myusername", mockProfile.profileId);
   });
 });

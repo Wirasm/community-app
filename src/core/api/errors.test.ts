@@ -1,28 +1,28 @@
 import { describe, expect, it } from "bun:test";
 import { ZodError } from "zod/v4";
 
-import { ProjectAccessDeniedError, ProjectNotFoundError } from "@/features/projects";
+import { ProfileAccessDeniedError, ProfileNotFoundError } from "@/features/profiles";
 
 import { handleApiError, unauthorizedResponse } from "./errors";
 
 describe("handleApiError", () => {
-  it("handles ProjectNotFoundError with 404", async () => {
-    const error = new ProjectNotFoundError("test-id");
+  it("handles ProfileNotFoundError with 404", async () => {
+    const error = new ProfileNotFoundError("test-id");
     const response = handleApiError(error);
     const data = await response.json();
 
     expect(response.status).toBe(404);
-    expect(data.code).toBe("PROJECT_NOT_FOUND");
+    expect(data.code).toBe("PROFILE_NOT_FOUND");
     expect(data.error).toContain("test-id");
   });
 
-  it("handles ProjectAccessDeniedError with 403", async () => {
-    const error = new ProjectAccessDeniedError("test-id");
+  it("handles ProfileAccessDeniedError with 403", async () => {
+    const error = new ProfileAccessDeniedError("test-id");
     const response = handleApiError(error);
     const data = await response.json();
 
     expect(response.status).toBe(403);
-    expect(data.code).toBe("PROJECT_ACCESS_DENIED");
+    expect(data.code).toBe("PROFILE_ACCESS_DENIED");
   });
 
   it("handles ZodError with 400 and field details", async () => {

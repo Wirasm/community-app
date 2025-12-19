@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     // Get current user's profile to exclude their own username
     const currentProfile = await getProfileByUserId(user.id);
-    const available = await checkUsernameAvailable(input.username, currentProfile.id);
+    const available = await checkUsernameAvailable(input.username, currentProfile.profileId);
 
     logger.info({ username: input.username, available }, "profile.check_username_completed");
 

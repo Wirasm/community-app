@@ -62,7 +62,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const community = await getCommunityBySlug(slug);
     const profile = await getProfileByUserId(user.id);
 
-    const updated = await updateCommunity(community.communityId, input, profile.id);
+    const updated = await updateCommunity(community.communityId, input, profile.profileId);
 
     logger.info(
       { communityId: updated.communityId, userId: user.id },
@@ -98,7 +98,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     const community = await getCommunityBySlug(slug);
     const profile = await getProfileByUserId(user.id);
 
-    await deleteCommunity(community.communityId, profile.id);
+    await deleteCommunity(community.communityId, profile.profileId);
 
     logger.info({ slug, userId: user.id }, "community.delete_completed");
 

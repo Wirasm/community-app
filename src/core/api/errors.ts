@@ -4,7 +4,6 @@ import { ZodError } from "zod/v4";
 import { getLogger } from "@/core/logging";
 import { CommunityError } from "@/features/communities";
 import { ProfileError } from "@/features/profiles";
-import { ProjectError } from "@/features/projects";
 import { createErrorResponse, type ErrorResponse } from "@/shared/schemas/errors";
 
 const logger = getLogger("api.errors");
@@ -72,7 +71,7 @@ export function handleApiError(error: unknown): NextResponse<ErrorResponse> {
     );
   }
 
-  // Handle feature errors (ProjectError, etc.)
+  // Handle feature errors (ProfileError, etc.)
   if (isHttpError(error)) {
     const level = error.statusCode >= 500 ? "error" : "warn";
     logger[level]({ error: error.message, code: error.code }, "api.error");
@@ -99,4 +98,4 @@ export function unauthorizedResponse(): NextResponse<ErrorResponse> {
 }
 
 // Re-export errors for type checking in other modules
-export { CommunityError, ProfileError, ProjectError };
+export { CommunityError, ProfileError };

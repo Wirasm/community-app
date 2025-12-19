@@ -1,4 +1,4 @@
-import { boolean, jsonb, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { jsonb, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 /**
  * Base timestamp columns for all tables.
@@ -40,21 +40,6 @@ export const users = pgTable("users", {
 });
 
 /**
- * Projects table - stores project information with ownership.
- */
-export const projects = pgTable("projects", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  slug: text("slug").notNull().unique(),
-  description: text("description"),
-  isPublic: boolean("is_public").notNull().default(false),
-  ownerId: uuid("owner_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  ...timestamps,
-});
-
-/**
  * Platform role enum for user access levels.
  */
 export const platformRoleEnum = pgEnum("platform_role", ["admin", "user", "suspended"]);
@@ -63,7 +48,7 @@ export const platformRoleEnum = pgEnum("platform_role", ["admin", "user", "suspe
  * Profiles table - public profile data for users.
  */
 export const profiles = pgTable("profiles", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  profileId: uuid("profile_id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
     .notNull()
     .unique()
@@ -96,7 +81,7 @@ export const communities = pgTable("communities", {
   communityId: uuid("community_id").primaryKey().defaultRandom(),
   ownerId: uuid("owner_id")
     .notNull()
-    .references(() => profiles.id, { onDelete: "cascade" }),
+    .references(() => profiles.profileId, { onDelete: "cascade" }),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   description: text("description"),

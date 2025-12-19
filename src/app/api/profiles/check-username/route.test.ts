@@ -8,7 +8,7 @@ import { ProfileNotFoundError } from "@/features/profiles";
 type MockUser = { id: string; email: string } | null;
 const mockUser: MockUser = { id: "user-123", email: "test@example.com" };
 const mockProfile: Profile = {
-  id: "profile-123",
+  profileId: "profile-123",
   userId: "user-123",
   username: "johndoe",
   displayName: "John Doe",

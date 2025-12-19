@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/core/supabase/server";
-import { getProjectCount } from "@/features/projects";
+import { getCommunityCount } from "@/features/communities";
+import { getProfileByUserId } from "@/features/profiles";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -8,7 +9,15 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const projectCount = user ? await getProjectCount(user.id) : 0;
+  let communityCount = 0;
+  if (user) {
+    try {
+      const profile = await getProfileByUserId(user.id);
+      communityCount = await getCommunityCount(profile.profileId);
+    } catch {
+      // Profile may not exist yet
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -47,23 +56,25 @@ export default async function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Projects</CardTitle>
-            <CardDescription>Your projects</CardDescription>
+            <CardTitle>Communities</CardTitle>
+            <CardDescription>Communities you own</CardDescription>
           </CardHeader>
           <CardContent>
-            {projectCount > 0 ? (
+            {communityCount > 0 ? (
               <p className="text-sm text-muted-foreground">
-                You have {projectCount} project{projectCount === 1 ? "" : "s"}.
+                You own {communityCount} communit{communityCount === 1 ? "y" : "ies"}.
               </p>
             ) : (
-              <p className="text-sm text-muted-foreground">No projects yet.</p>
+              <p className="text-sm text-muted-foreground">No communities yet.</p>
             )}
-            <a
-              href="/dashboard/projects"
-              className="mt-4 inline-block text-sm text-primary hover:underline"
-            >
-              Manage projects &rarr;
-            </a>
+            <div className="mt-4 flex gap-4">
+              <a href="/explore" className="text-sm text-primary hover:underline">
+                Explore &rarr;
+              </a>
+              <a href="/communities/new" className="text-sm text-primary hover:underline">
+                Create new &rarr;
+              </a>
+            </div>
           </CardContent>
         </Card>
       </div>

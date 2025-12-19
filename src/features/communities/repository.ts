@@ -1,4 +1,4 @@
-import { and, count, eq, ne } from "drizzle-orm";
+import { and, count, desc, eq, ilike, ne, or } from "drizzle-orm";
 
 import { db } from "@/core/database/client";
 import { getLogger } from "@/core/logging";
@@ -27,8 +27,26 @@ export async function findByOwnerId(ownerId: string): Promise<Community[]> {
   return db.select().from(communities).where(eq(communities.ownerId, ownerId));
 }
 
-export async function findPublic(): Promise<Community[]> {
-  return db.select().from(communities).where(eq(communities.visibility, "public"));
+export async function findPublic(search?: string): Promise<Community[]> {
+  if (search) {
+    const searchPattern = `%${search.toLowerCase()}%`;
+    return db
+      .select()
+      .from(communities)
+      .where(
+        and(
+          eq(communities.visibility, "public"),
+          or(ilike(communities.name, searchPattern), ilike(communities.description, searchPattern)),
+        ),
+      )
+      .orderBy(desc(communities.createdAt));
+  }
+
+  return db
+    .select()
+    .from(communities)
+    .where(eq(communities.visibility, "public"))
+    .orderBy(desc(communities.createdAt));
 }
 
 export async function create(data: NewCommunity): Promise<Community> {

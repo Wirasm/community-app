@@ -121,12 +121,12 @@ export async function getCommunitiesByOwner(ownerId: string): Promise<Community[
 /**
  * Get all public communities.
  */
-export async function getPublicCommunities(): Promise<Community[]> {
-  logger.info({}, "community.get_public_started");
+export async function getPublicCommunities(search?: string): Promise<Community[]> {
+  logger.info({ search }, "community.get_public_started");
 
-  const communities = await repository.findPublic();
+  const communities = await repository.findPublic(search);
 
-  logger.info({ count: communities.length }, "community.get_public_completed");
+  logger.info({ count: communities.length, search }, "community.get_public_completed");
   return communities;
 }
 

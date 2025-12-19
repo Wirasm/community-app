@@ -8,7 +8,7 @@ import { ProfileNotFoundError } from "@/features/profiles";
 type MockUser = { id: string; email: string } | null;
 const mockUser: MockUser = { id: "user-123", email: "test@example.com" };
 const mockProfile: Profile = {
-  id: "profile-123",
+  profileId: "profile-123",
   userId: "user-123",
   username: "johndoe",
   displayName: "John Doe",
@@ -80,7 +80,7 @@ describe("GET /api/profiles/me", () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(data.id).toBe("profile-123");
+    expect(data.profileId).toBe("profile-123");
     expect(data.username).toBe("johndoe");
     expect(mockGetProfileByUserId).toHaveBeenCalledWith("user-123");
   });

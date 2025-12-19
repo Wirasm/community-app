@@ -16,13 +16,16 @@ const logger = getLogger("api.communities");
  * GET /api/communities
  * List public communities.
  */
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    logger.info({}, "communities.list_started");
+    const searchParams = request.nextUrl.searchParams;
+    const search = searchParams.get("search") ?? undefined;
 
-    const communities = await getPublicCommunities();
+    logger.info({ search }, "communities.list_started");
 
-    logger.info({ count: communities.length }, "communities.list_completed");
+    const communities = await getPublicCommunities(search);
+
+    logger.info({ count: communities.length, search }, "communities.list_completed");
 
     return NextResponse.json(communities);
   } catch (error) {
@@ -53,7 +56,7 @@ export async function POST(request: NextRequest) {
     // Get the user's profile to use as owner
     const profile = await getProfileByUserId(user.id);
 
-    const community = await createCommunity(input, profile.id);
+    const community = await createCommunity(input, profile.profileId);
 
     logger.info(
       { communityId: community.communityId, userId: user.id },
