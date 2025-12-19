@@ -2,9 +2,12 @@ import { and, count, desc, eq } from "drizzle-orm";
 
 import { db } from "@/core/database/client";
 import { getLogger } from "@/core/logging";
+import type { PaginationParams } from "@/shared/schemas/pagination";
+import { getOffset } from "@/shared/schemas/pagination";
 
 import type { Membership, NewMembership } from "./models";
 import { memberships } from "./models";
+import type { CommunityRole, MembershipStatus } from "./schemas";
 
 const logger = getLogger("memberships.repository");
 
@@ -35,6 +38,39 @@ export async function findByCommunity(communityId: string): Promise<Membership[]
     .from(memberships)
     .where(eq(memberships.communityId, communityId))
     .orderBy(desc(memberships.joinedAt));
+}
+
+export async function findByCommunityPaginated(
+  communityId: string,
+  params: PaginationParams,
+  filters?: { status?: MembershipStatus; role?: CommunityRole },
+): Promise<{ members: Membership[]; total: number }> {
+  const conditions = [eq(memberships.communityId, communityId)];
+
+  if (filters?.status) {
+    conditions.push(eq(memberships.status, filters.status));
+  }
+  if (filters?.role) {
+    conditions.push(eq(memberships.role, filters.role));
+  }
+
+  const whereClause = and(...conditions);
+
+  const [members, countResult] = await Promise.all([
+    db
+      .select()
+      .from(memberships)
+      .where(whereClause)
+      .orderBy(desc(memberships.joinedAt))
+      .limit(params.pageSize)
+      .offset(getOffset(params)),
+    db.select({ count: count() }).from(memberships).where(whereClause),
+  ]);
+
+  return {
+    members,
+    total: countResult[0]?.count ?? 0,
+  };
 }
 
 export async function findActiveByCommunity(communityId: string): Promise<Membership[]> {

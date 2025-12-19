@@ -4,7 +4,11 @@ import { handleApiError, unauthorizedResponse } from "@/core/api/errors";
 import { getLogger } from "@/core/logging";
 import { createClient } from "@/core/supabase/server";
 import { getCommunityBySlug } from "@/features/communities";
-import { joinCommunity, listCommunityMembers } from "@/features/memberships";
+import {
+  joinCommunity,
+  ListMembersQuerySchema,
+  listCommunityMembersPaginated,
+} from "@/features/memberships";
 import { getProfileByUserId } from "@/features/profiles";
 
 const logger = getLogger("api.communities.members");
@@ -15,20 +19,44 @@ interface RouteParams {
 
 /**
  * GET /api/communities/[slug]/members
- * List all members of a community.
+ * List all members of a community with pagination.
  */
-export async function GET(_request: NextRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { slug } = await params;
+    const { searchParams } = new URL(request.url);
 
-    logger.info({ slug }, "members.list_started");
+    // Parse pagination and filter params
+    const queryParams = ListMembersQuerySchema.parse({
+      page: searchParams.get("page") ? Number(searchParams.get("page")) : undefined,
+      pageSize: searchParams.get("pageSize") ? Number(searchParams.get("pageSize")) : undefined,
+      status: searchParams.get("status") ?? undefined,
+      role: searchParams.get("role") ?? undefined,
+    });
+
+    logger.info({ slug, ...queryParams }, "members.list_started");
 
     const community = await getCommunityBySlug(slug);
-    const members = await listCommunityMembers(community.communityId);
 
-    logger.info({ slug, count: members.length }, "members.list_completed");
+    // Build filters object for exactOptionalPropertyTypes
+    type CommunityRole = "owner" | "co_owner" | "admin" | "moderator" | "member";
+    const filters: { status?: "active" | "pending" | "banned"; role?: CommunityRole } = {};
+    if (queryParams.status !== undefined) {
+      filters.status = queryParams.status;
+    }
+    if (queryParams.role !== undefined) {
+      filters.role = queryParams.role;
+    }
 
-    return NextResponse.json(members);
+    const result = await listCommunityMembersPaginated(
+      community.communityId,
+      { page: queryParams.page, pageSize: queryParams.pageSize },
+      filters,
+    );
+
+    logger.info({ slug, count: result.items.length }, "members.list_completed");
+
+    return NextResponse.json(result);
   } catch (error) {
     return handleApiError(error);
   }

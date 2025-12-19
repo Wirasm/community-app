@@ -1,5 +1,7 @@
 import { z } from "zod/v4";
 
+import { PaginationParamsSchema } from "@/shared/schemas/pagination";
+
 /** Valid community roles in hierarchy order (highest to lowest). */
 export const COMMUNITY_ROLES = ["owner", "co_owner", "admin", "moderator", "member"] as const;
 export type CommunityRole = (typeof COMMUNITY_ROLES)[number];
@@ -47,3 +49,11 @@ export const MembershipResponseSchema = z.object({
 });
 
 export type MembershipResponse = z.infer<typeof MembershipResponseSchema>;
+
+/** Query params for listing community members. */
+export const ListMembersQuerySchema = PaginationParamsSchema.extend({
+  status: z.enum(MEMBERSHIP_STATUSES).optional(),
+  role: z.enum(COMMUNITY_ROLES).optional(),
+});
+
+export type ListMembersQuery = z.infer<typeof ListMembersQuerySchema>;

@@ -10,7 +10,8 @@ export type MembershipErrorCode =
   | "INSUFFICIENT_PERMISSIONS"
   | "CANNOT_MODIFY_OWNER"
   | "OWNER_CANNOT_LEAVE"
-  | "INVALID_ROLE_ASSIGNMENT";
+  | "INVALID_ROLE_ASSIGNMENT"
+  | "USER_BANNED";
 
 /**
  * Base error for membership-related errors.
@@ -66,5 +67,11 @@ export class OwnerCannotLeaveError extends MembershipError {
 export class InvalidRoleAssignmentError extends MembershipError {
   constructor(role: CommunityRole) {
     super(`Cannot assign role: ${role}`, "INVALID_ROLE_ASSIGNMENT", 403);
+  }
+}
+
+export class BannedUserError extends MembershipError {
+  constructor(communityId: string) {
+    super(`User is banned from community: ${communityId}`, "USER_BANNED", 403);
   }
 }

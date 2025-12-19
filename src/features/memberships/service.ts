@@ -1,7 +1,10 @@
 import { getLogger } from "@/core/logging";
+import type { PaginatedResponse, PaginationParams } from "@/shared/schemas/pagination";
+import { createPaginatedResponse } from "@/shared/schemas/pagination";
 
 import {
   AlreadyMemberError,
+  BannedUserError,
   CannotModifyOwnerError,
   InsufficientPermissionsError,
   InvalidRoleAssignmentError,
@@ -12,7 +15,7 @@ import {
 import type { Membership } from "./models";
 import { canAssignRole, canManageRole } from "./permissions";
 import * as repository from "./repository";
-import type { MembershipStatus, UpdateMembershipInput } from "./schemas";
+import type { CommunityRole, MembershipStatus, UpdateMembershipInput } from "./schemas";
 
 const logger = getLogger("memberships.service");
 
@@ -35,10 +38,12 @@ export async function getMembership(membershipId: string): Promise<Membership> {
 
 /**
  * Get membership for a profile in a community.
+ * Throws BannedUserError if user is banned (unless throwOnBanned is false).
  */
 export async function getMembershipByProfileAndCommunity(
   profileId: string,
   communityId: string,
+  options?: { throwOnBanned?: boolean },
 ): Promise<Membership> {
   logger.info({ profileId, communityId }, "membership.get_by_profile_community_started");
 
@@ -47,6 +52,12 @@ export async function getMembershipByProfileAndCommunity(
   if (!membership) {
     logger.warn({ profileId, communityId }, "membership.get_by_profile_community_failed");
     throw new NotMemberError(communityId);
+  }
+
+  // Check if user is banned
+  if (options?.throwOnBanned !== false && membership.status === "banned") {
+    logger.warn({ profileId, communityId }, "membership.user_banned");
+    throw new BannedUserError(communityId);
   }
 
   logger.info(
@@ -66,6 +77,26 @@ export async function listCommunityMembers(communityId: string): Promise<Members
 
   logger.info({ communityId, count: members.length }, "membership.list_completed");
   return members;
+}
+
+/**
+ * List members of a community with pagination and optional filters.
+ */
+export async function listCommunityMembersPaginated(
+  communityId: string,
+  params: PaginationParams,
+  filters?: { status?: MembershipStatus; role?: CommunityRole },
+): Promise<PaginatedResponse<Membership>> {
+  logger.info({ communityId, page: params.page }, "membership.list_paginated_started");
+
+  const { members, total } = await repository.findByCommunityPaginated(
+    communityId,
+    params,
+    filters,
+  );
+
+  logger.info({ communityId, count: members.length, total }, "membership.list_paginated_completed");
+  return createPaginatedResponse(members, total, params);
 }
 
 /**
@@ -276,4 +307,77 @@ export async function isMember(profileId: string, communityId: string): Promise<
 
   logger.info({ profileId, communityId, isMember: exists }, "membership.check_completed");
   return exists;
+}
+
+/**
+ * Transfer community ownership to another active member.
+ * Current owner becomes co_owner, new owner gets owner role.
+ */
+export async function transferOwnership(
+  communityId: string,
+  currentOwnerProfileId: string,
+  newOwnerProfileId: string,
+): Promise<{ oldOwnerMembership: Membership; newOwnerMembership: Membership }> {
+  logger.info(
+    { communityId, currentOwnerProfileId, newOwnerProfileId },
+    "membership.transfer_started",
+  );
+
+  // Get current owner's membership
+  const currentOwnerMembership = await repository.findByProfileAndCommunity(
+    currentOwnerProfileId,
+    communityId,
+  );
+  if (!currentOwnerMembership) {
+    throw new NotMemberError(communityId);
+  }
+  if (currentOwnerMembership.role !== "owner") {
+    logger.warn(
+      { currentOwnerProfileId, role: currentOwnerMembership.role },
+      "membership.not_owner",
+    );
+    throw new InsufficientPermissionsError("transfer ownership");
+  }
+
+  // Get new owner's membership
+  const newOwnerMembership = await repository.findByProfileAndCommunity(
+    newOwnerProfileId,
+    communityId,
+  );
+  if (!newOwnerMembership) {
+    logger.warn({ newOwnerProfileId }, "membership.new_owner_not_member");
+    throw new NotMemberError(communityId);
+  }
+  if (newOwnerMembership.status !== "active") {
+    logger.warn(
+      { newOwnerProfileId, status: newOwnerMembership.status },
+      "membership.new_owner_not_active",
+    );
+    throw new InsufficientPermissionsError("transfer to non-active member");
+  }
+
+  // Perform transfer: demote current owner to co_owner, promote new owner to owner
+  const [updatedOldOwner, updatedNewOwner] = await Promise.all([
+    repository.update(currentOwnerMembership.membershipId, { role: "co_owner" }),
+    repository.update(newOwnerMembership.membershipId, { role: "owner" }),
+  ]);
+
+  if (!updatedOldOwner || !updatedNewOwner) {
+    logger.error({ communityId }, "membership.transfer_failed");
+    throw new Error("Failed to transfer ownership");
+  }
+
+  logger.info(
+    {
+      communityId,
+      oldOwner: currentOwnerProfileId,
+      newOwner: newOwnerProfileId,
+    },
+    "membership.transfer_completed",
+  );
+
+  return {
+    oldOwnerMembership: updatedOldOwner,
+    newOwnerMembership: updatedNewOwner,
+  };
 }
