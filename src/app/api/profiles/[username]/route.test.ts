@@ -5,7 +5,7 @@ import type { Profile } from "@/features/profiles";
 import { ProfileNotFoundError } from "@/features/profiles";
 
 const mockProfile: Profile = {
-  id: "profile-123",
+  profileId: "profile-123",
   userId: "user-123",
   username: "johndoe",
   displayName: "John Doe",

@@ -22,7 +22,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
     const profile = await getProfileByUsername(username);
 
-    logger.info({ profileId: profile.id, username }, "profile.public.get_completed");
+    logger.info({ profileId: profile.profileId, username }, "profile.public.get_completed");
 
     return NextResponse.json(profile);
   } catch (error) {
