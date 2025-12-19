@@ -154,7 +154,10 @@ export async function updateCommunity(
 
   // Build update data, only including defined properties (for exactOptionalPropertyTypes)
   const updateData: Partial<
-    Pick<Community, "name" | "description" | "about" | "visibility" | "settings">
+    Pick<
+      Community,
+      "name" | "description" | "about" | "visibility" | "settings" | "logoUrl" | "bannerUrl"
+    >
   > = {};
   if (input.name !== undefined) {
     updateData.name = input.name;
@@ -170,6 +173,12 @@ export async function updateCommunity(
   }
   if (input.settings !== undefined) {
     updateData.settings = input.settings;
+  }
+  if (input.logoUrl !== undefined) {
+    updateData.logoUrl = input.logoUrl;
+  }
+  if (input.bannerUrl !== undefined) {
+    updateData.bannerUrl = input.bannerUrl;
   }
 
   const updated = await repository.update(communityId, updateData);

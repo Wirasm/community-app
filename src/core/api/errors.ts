@@ -4,6 +4,7 @@ import { ZodError } from "zod/v4";
 import { getLogger } from "@/core/logging";
 import { CommunityError } from "@/features/communities";
 import { ProfileError } from "@/features/profiles";
+import { StorageError } from "@/features/storage";
 import { createErrorResponse, type ErrorResponse } from "@/shared/schemas/errors";
 
 const logger = getLogger("api.errors");
@@ -11,7 +12,7 @@ const logger = getLogger("api.errors");
 /**
  * Valid HTTP status codes for API errors.
  */
-export type HttpStatusCode = 400 | 401 | 403 | 404 | 409 | 500;
+export type HttpStatusCode = 400 | 401 | 403 | 404 | 409 | 413 | 500;
 
 /**
  * Shape of errors that carry HTTP semantics.
@@ -23,7 +24,7 @@ interface HttpError {
   statusCode: HttpStatusCode;
 }
 
-const VALID_STATUS_CODES = new Set<HttpStatusCode>([400, 401, 403, 404, 409, 500]);
+const VALID_STATUS_CODES = new Set<HttpStatusCode>([400, 401, 403, 404, 409, 413, 500]);
 
 /**
  * Check if an error has HTTP error properties.
@@ -98,4 +99,4 @@ export function unauthorizedResponse(): NextResponse<ErrorResponse> {
 }
 
 // Re-export errors for type checking in other modules
-export { CommunityError, ProfileError };
+export { CommunityError, ProfileError, StorageError };

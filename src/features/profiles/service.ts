@@ -92,7 +92,17 @@ export async function updateProfile(
 
   // Build update data, only including defined properties (for exactOptionalPropertyTypes)
   const updateData: Partial<
-    Pick<Profile, "username" | "displayName" | "bio" | "location" | "website" | "socialLinks">
+    Pick<
+      Profile,
+      | "username"
+      | "displayName"
+      | "bio"
+      | "location"
+      | "website"
+      | "socialLinks"
+      | "avatarUrl"
+      | "bannerUrl"
+    >
   > = {};
   if (input.username !== undefined) {
     updateData.username = input.username;
@@ -111,6 +121,12 @@ export async function updateProfile(
   }
   if (input.socialLinks !== undefined) {
     updateData.socialLinks = input.socialLinks;
+  }
+  if (input.avatarUrl !== undefined) {
+    updateData.avatarUrl = input.avatarUrl;
+  }
+  if (input.bannerUrl !== undefined) {
+    updateData.bannerUrl = input.bannerUrl;
   }
 
   const updated = await repository.update(profileId, updateData);
