@@ -3,6 +3,7 @@ import { ZodError } from "zod/v4";
 
 import { getLogger } from "@/core/logging";
 import { CommunityError } from "@/features/communities";
+import { MembershipError } from "@/features/memberships";
 import { ProfileError } from "@/features/profiles";
 import { StorageError } from "@/features/storage";
 import { createErrorResponse, type ErrorResponse } from "@/shared/schemas/errors";
@@ -99,4 +100,4 @@ export function unauthorizedResponse(): NextResponse<ErrorResponse> {
 }
 
 // Re-export errors for type checking in other modules
-export { CommunityError, ProfileError, StorageError };
+export { CommunityError, MembershipError, ProfileError, StorageError };
