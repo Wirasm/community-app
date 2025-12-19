@@ -4,12 +4,16 @@ export {
   AlreadyMemberError,
   BannedUserError,
   CannotModifyOwnerError,
+  DatabaseError,
   InsufficientPermissionsError,
   InvalidRoleAssignmentError,
+  MembershipCreationFailedError,
+  MembershipDeleteFailedError,
   MembershipError,
   MembershipNotFoundError,
   NotMemberError,
   OwnerCannotLeaveError,
+  OwnershipTransferFailedError,
 } from "./errors";
 
 // Types and Schemas

@@ -8,9 +8,11 @@ import {
   CannotModifyOwnerError,
   InsufficientPermissionsError,
   InvalidRoleAssignmentError,
+  MembershipDeleteFailedError,
   MembershipNotFoundError,
   NotMemberError,
   OwnerCannotLeaveError,
+  OwnershipTransferFailedError,
 } from "./errors";
 import type { Membership } from "./models";
 import { canAssignRole, canManageRole } from "./permissions";
@@ -175,7 +177,11 @@ export async function leaveCommunity(profileId: string, communityId: string): Pr
     throw new OwnerCannotLeaveError();
   }
 
-  await repository.deleteById(membership.membershipId);
+  const deleted = await repository.deleteById(membership.membershipId);
+  if (!deleted) {
+    logger.error({ membershipId: membership.membershipId }, "membership.leave_delete_failed");
+    throw new MembershipDeleteFailedError(membership.membershipId);
+  }
 
   logger.info({ membershipId: membership.membershipId }, "membership.leave_completed");
 }
@@ -291,7 +297,11 @@ export async function removeMember(
     throw new InsufficientPermissionsError("remove this member");
   }
 
-  await repository.deleteById(targetMembershipId);
+  const deleted = await repository.deleteById(targetMembershipId);
+  if (!deleted) {
+    logger.error({ membershipId: targetMembershipId }, "membership.remove_delete_failed");
+    throw new MembershipDeleteFailedError(targetMembershipId);
+  }
 
   logger.info({ membershipId: targetMembershipId }, "membership.remove_completed");
 }
@@ -329,6 +339,7 @@ export async function transferOwnership(
     communityId,
   );
   if (!currentOwnerMembership) {
+    logger.warn({ currentOwnerProfileId, communityId }, "membership.current_owner_not_member");
     throw new NotMemberError(communityId);
   }
   if (currentOwnerMembership.role !== "owner") {
@@ -364,7 +375,7 @@ export async function transferOwnership(
 
   if (!updatedOldOwner || !updatedNewOwner) {
     logger.error({ communityId }, "membership.transfer_failed");
-    throw new Error("Failed to transfer ownership");
+    throw new OwnershipTransferFailedError(communityId);
   }
 
   logger.info(

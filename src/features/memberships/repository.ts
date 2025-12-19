@@ -5,6 +5,7 @@ import { getLogger } from "@/core/logging";
 import type { PaginationParams } from "@/shared/schemas/pagination";
 import { getOffset } from "@/shared/schemas/pagination";
 
+import { DatabaseError, MembershipCreationFailedError } from "./errors";
 import type { Membership, NewMembership } from "./models";
 import { memberships } from "./models";
 import type { CommunityRole, MembershipStatus } from "./schemas";
@@ -67,9 +68,15 @@ export async function findByCommunityPaginated(
     db.select({ count: count() }).from(memberships).where(whereClause),
   ]);
 
+  const countRow = countResult[0];
+  if (!countRow) {
+    logger.error({ communityId }, "membership.paginated_count_unexpected_result");
+    throw new DatabaseError("count members");
+  }
+
   return {
     members,
-    total: countResult[0]?.count ?? 0,
+    total: countRow.count,
   };
 }
 
@@ -95,14 +102,14 @@ export async function countByCommunity(communityId: string): Promise<number> {
     .from(memberships)
     .where(and(eq(memberships.communityId, communityId), eq(memberships.status, "active")));
 
-  // Count query should always return exactly one row
+  // Drizzle count() always returns exactly one row; this guard is defensive against ORM bugs
   const result = results[0];
   if (results.length !== 1 || result === undefined) {
     logger.error(
       { communityId, resultCount: results.length },
       "membership.count_unexpected_result",
     );
-    return 0;
+    throw new DatabaseError("count community members");
   }
 
   return result.count;
@@ -122,7 +129,7 @@ export async function create(data: NewMembership): Promise<Membership> {
       { communityId: data.communityId, profileId: data.profileId },
       "membership.create_failed",
     );
-    throw new Error("Failed to create membership");
+    throw new MembershipCreationFailedError(data.communityId);
   }
 
   logger.info({ membershipId: membership.membershipId }, "membership.create_completed");

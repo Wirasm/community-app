@@ -11,7 +11,11 @@ export type MembershipErrorCode =
   | "CANNOT_MODIFY_OWNER"
   | "OWNER_CANNOT_LEAVE"
   | "INVALID_ROLE_ASSIGNMENT"
-  | "USER_BANNED";
+  | "USER_BANNED"
+  | "MEMBERSHIP_CREATION_FAILED"
+  | "OWNERSHIP_TRANSFER_FAILED"
+  | "MEMBERSHIP_DELETE_FAILED"
+  | "DATABASE_ERROR";
 
 /**
  * Base error for membership-related errors.
@@ -73,5 +77,37 @@ export class InvalidRoleAssignmentError extends MembershipError {
 export class BannedUserError extends MembershipError {
   constructor(communityId: string) {
     super(`User is banned from community: ${communityId}`, "USER_BANNED", 403);
+  }
+}
+
+export class MembershipCreationFailedError extends MembershipError {
+  constructor(communityId: string) {
+    super(
+      `Failed to create membership for community: ${communityId}`,
+      "MEMBERSHIP_CREATION_FAILED",
+      500,
+    );
+  }
+}
+
+export class OwnershipTransferFailedError extends MembershipError {
+  constructor(communityId: string) {
+    super(
+      `Failed to transfer ownership for community: ${communityId}`,
+      "OWNERSHIP_TRANSFER_FAILED",
+      500,
+    );
+  }
+}
+
+export class MembershipDeleteFailedError extends MembershipError {
+  constructor(membershipId: string) {
+    super(`Failed to delete membership: ${membershipId}`, "MEMBERSHIP_DELETE_FAILED", 500);
+  }
+}
+
+export class DatabaseError extends MembershipError {
+  constructor(operation: string) {
+    super(`Database error during: ${operation}`, "DATABASE_ERROR", 500);
   }
 }
