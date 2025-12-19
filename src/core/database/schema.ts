@@ -1,4 +1,4 @@
-import { boolean, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, jsonb, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 /**
  * Base timestamp columns for all tables.
@@ -51,5 +51,31 @@ export const projects = pgTable("projects", {
   ownerId: uuid("owner_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+  ...timestamps,
+});
+
+/**
+ * Platform role enum for user access levels.
+ */
+export const platformRoleEnum = pgEnum("platform_role", ["admin", "user", "suspended"]);
+
+/**
+ * Profiles table - public profile data for users.
+ */
+export const profiles = pgTable("profiles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: "cascade" }),
+  username: text("username").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  bio: text("bio"),
+  avatarUrl: text("avatar_url"),
+  bannerUrl: text("banner_url"),
+  location: text("location"),
+  website: text("website"),
+  socialLinks: jsonb("social_links").$type<Record<string, string>>().default({}),
+  platformRole: platformRoleEnum("platform_role").notNull().default("user"),
   ...timestamps,
 });
