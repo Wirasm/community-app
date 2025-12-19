@@ -25,6 +25,7 @@ CLAUDE.md rules: @CLAUDE.md
 ## Phase 1: PARSE - Feature Understanding
 
 **EXTRACT from input:**
+
 - Core problem being solved
 - User value and business impact
 - Feature type: NEW_CAPABILITY | ENHANCEMENT | REFACTOR | BUG_FIX
@@ -32,6 +33,7 @@ CLAUDE.md rules: @CLAUDE.md
 - Affected systems list
 
 **FORMULATE user story:**
+
 ```
 As a <user type>
 I want to <action/goal>
@@ -39,6 +41,7 @@ So that <benefit/value>
 ```
 
 **PHASE_1_CHECKPOINT:**
+
 - [ ] Problem statement is specific and testable
 - [ ] User story follows correct format
 - [ ] Complexity assessment has rationale
@@ -53,6 +56,7 @@ So that <benefit/value>
 **CRITICAL: Use Task tool with subagent_type="Explore" and prompt for thoroughness="very thorough"**
 
 Example Task invocation:
+
 ```
 Explore the codebase to find patterns, conventions, and integration points
 relevant to implementing: [feature description].
@@ -72,15 +76,16 @@ Return ACTUAL code snippets from codebase, not generic examples.
 
 **DOCUMENT discoveries in table format:**
 
-| Category | File:Lines | Pattern Description | Code Snippet |
-|----------|-----------|---------------------|--------------|
-| NAMING | `src/features/X/service.ts:10-15` | camelCase functions | `export function createThing()` |
-| ERRORS | `src/features/X/errors.ts:5-20` | Custom error classes | `class ThingNotFoundError` |
-| LOGGING | `src/core/logging/index.ts:1-10` | getLogger pattern | `const logger = getLogger("domain")` |
-| TESTS | `src/features/X/tests/service.test.ts:1-30` | describe/it blocks | `describe("service", () => {` |
-| TYPES | `src/features/X/models.ts:1-20` | Drizzle inference | `type Thing = typeof things.$inferSelect` |
+| Category | File:Lines                                  | Pattern Description  | Code Snippet                              |
+| -------- | ------------------------------------------- | -------------------- | ----------------------------------------- |
+| NAMING   | `src/features/X/service.ts:10-15`           | camelCase functions  | `export function createThing()`           |
+| ERRORS   | `src/features/X/errors.ts:5-20`             | Custom error classes | `class ThingNotFoundError`                |
+| LOGGING  | `src/core/logging/index.ts:1-10`            | getLogger pattern    | `const logger = getLogger("domain")`      |
+| TESTS    | `src/features/X/tests/service.test.ts:1-30` | describe/it blocks   | `describe("service", () => {`             |
+| TYPES    | `src/features/X/models.ts:1-20`             | Drizzle inference    | `type Thing = typeof things.$inferSelect` |
 
 **PHASE_2_CHECKPOINT:**
+
 - [ ] Explore agent launched and completed successfully
 - [ ] At least 3 similar implementations found with file:line refs
 - [ ] Code snippets are ACTUAL (copy-pasted from codebase, not invented)
@@ -94,12 +99,14 @@ Return ACTUAL code snippets from codebase, not generic examples.
 **ONLY AFTER Phase 2 is complete** - solutions must fit existing codebase patterns first.
 
 **SEARCH for (use WebSearch tool):**
+
 - Official documentation for involved libraries (match versions from package.json)
 - Known gotchas, breaking changes, deprecations
 - Security considerations and best practices
 - Performance optimization patterns
 
 **FORMAT references with specificity:**
+
 ```markdown
 - [Library Docs v{version}](https://url#specific-section)
   - KEY_INSIGHT: {what we learned that affects implementation}
@@ -108,6 +115,7 @@ Return ACTUAL code snippets from codebase, not generic examples.
 ```
 
 **PHASE_3_CHECKPOINT:**
+
 - [ ] Documentation versions match package.json
 - [ ] URLs include specific section anchors (not just homepage)
 - [ ] Gotchas documented with mitigation strategies
@@ -158,12 +166,13 @@ Return ACTUAL code snippets from codebase, not generic examples.
 
 **DOCUMENT interaction changes:**
 
-| Location | Before | After | User_Action | Impact |
-|----------|--------|-------|-------------|--------|
-| `/route` | State A | State B | Click X | Can now Y |
-| `Component.tsx` | Missing feature | Has feature | Input Z | Gets result W |
+| Location        | Before          | After       | User_Action | Impact        |
+| --------------- | --------------- | ----------- | ----------- | ------------- |
+| `/route`        | State A         | State B     | Click X     | Can now Y     |
+| `Component.tsx` | Missing feature | Has feature | Input Z     | Gets result W |
 
 **PHASE_4_CHECKPOINT:**
+
 - [ ] Before state accurately reflects current system behavior
 - [ ] After state shows ALL new capabilities
 - [ ] Data flows are traceable from input to output
@@ -174,6 +183,7 @@ Return ACTUAL code snippets from codebase, not generic examples.
 ## Phase 5: ARCHITECT - Strategic Design
 
 **ANALYZE deeply (use extended thinking if needed):**
+
 - ARCHITECTURE_FIT: How does this integrate with vertical slice structure?
 - EXECUTION_ORDER: What must happen first → second → third?
 - FAILURE_MODES: Edge cases, race conditions, error scenarios?
@@ -188,15 +198,18 @@ APPROACH_CHOSEN: [description]
 RATIONALE: [why this over alternatives - reference codebase patterns]
 
 ALTERNATIVES_REJECTED:
+
 - [Alternative 1]: Rejected because [specific reason]
 - [Alternative 2]: Rejected because [specific reason]
 
 NOT_BUILDING (explicit scope limits):
+
 - [Item 1 - explicitly out of scope and why]
 - [Item 2 - explicitly out of scope and why]
 ```
 
 **PHASE_5_CHECKPOINT:**
+
 - [ ] Approach aligns with existing vertical slice architecture
 - [ ] Dependencies ordered correctly (types → repository → service → routes)
 - [ ] Edge cases identified with specific mitigation strategies
@@ -216,27 +229,32 @@ Create directory if needed: `mkdir -p .agents/plans`
 # Feature: {Feature Name}
 
 ## Summary
+
 {One paragraph: What we're building and high-level approach}
 
 ## User Story
+
 As a {user type}
 I want to {action}
 So that {benefit}
 
 ## Problem Statement
+
 {Specific problem this solves - must be testable}
 
 ## Solution Statement
+
 {How we're solving it - architecture overview}
 
 ## Metadata
-| Field | Value |
-|-------|-------|
-| Type | NEW_CAPABILITY / ENHANCEMENT / REFACTOR / BUG_FIX |
-| Complexity | LOW / MEDIUM / HIGH |
-| Systems Affected | {comma-separated list} |
-| Dependencies | {external libs/services with versions} |
-| Estimated Tasks | {count} |
+
+| Field            | Value                                             |
+| ---------------- | ------------------------------------------------- |
+| Type             | NEW_CAPABILITY / ENHANCEMENT / REFACTOR / BUG_FIX |
+| Complexity       | LOW / MEDIUM / HIGH                               |
+| Systems Affected | {comma-separated list}                            |
+| Dependencies     | {external libs/services with versions}            |
+| Estimated Tasks  | {count}                                           |
 
 ---
 
@@ -244,13 +262,17 @@ So that {benefit}
 
 ### Before State
 ```
+
 {ASCII diagram - current user experience with data flows}
+
 ```
 
 ### After State
 ```
+
 {ASCII diagram - new user experience with data flows}
-```
+
+````
 
 ### Interaction Changes
 | Location | Before | After | User Impact |
@@ -283,9 +305,10 @@ So that {benefit}
 // SOURCE: src/features/example/service.ts:10-15
 // COPY THIS PATTERN:
 {actual code snippet from codebase}
-```
+````
 
 **ERROR_HANDLING:**
+
 ```typescript
 // SOURCE: src/features/example/errors.ts:5-20
 // COPY THIS PATTERN:
@@ -293,6 +316,7 @@ So that {benefit}
 ```
 
 **LOGGING_PATTERN:**
+
 ```typescript
 // SOURCE: src/features/example/service.ts:25-30
 // COPY THIS PATTERN:
@@ -300,6 +324,7 @@ So that {benefit}
 ```
 
 **REPOSITORY_PATTERN:**
+
 ```typescript
 // SOURCE: src/features/example/repository.ts:10-40
 // COPY THIS PATTERN:
@@ -307,6 +332,7 @@ So that {benefit}
 ```
 
 **SERVICE_PATTERN:**
+
 ```typescript
 // SOURCE: src/features/example/service.ts:40-80
 // COPY THIS PATTERN:
@@ -314,6 +340,7 @@ So that {benefit}
 ```
 
 **TEST_STRUCTURE:**
+
 ```typescript
 // SOURCE: src/features/example/tests/service.test.ts:1-25
 // COPY THIS PATTERN:
@@ -324,21 +351,22 @@ So that {benefit}
 
 ## Files to Change
 
-| File | Action | Justification |
-|------|--------|---------------|
-| `src/features/new/models.ts` | CREATE | Type definitions - re-export from schema |
-| `src/features/new/schemas.ts` | CREATE | Zod validation schemas |
-| `src/features/new/errors.ts` | CREATE | Feature-specific errors |
-| `src/features/new/repository.ts` | CREATE | Database operations |
-| `src/features/new/service.ts` | CREATE | Business logic |
-| `src/features/new/index.ts` | CREATE | Public API exports |
-| `src/core/database/schema.ts` | UPDATE | Add table definition |
+| File                             | Action | Justification                            |
+| -------------------------------- | ------ | ---------------------------------------- |
+| `src/features/new/models.ts`     | CREATE | Type definitions - re-export from schema |
+| `src/features/new/schemas.ts`    | CREATE | Zod validation schemas                   |
+| `src/features/new/errors.ts`     | CREATE | Feature-specific errors                  |
+| `src/features/new/repository.ts` | CREATE | Database operations                      |
+| `src/features/new/service.ts`    | CREATE | Business logic                           |
+| `src/features/new/index.ts`      | CREATE | Public API exports                       |
+| `src/core/database/schema.ts`    | UPDATE | Add table definition                     |
 
 ---
 
 ## NOT Building (Scope Limits)
 
 Explicit exclusions to prevent scope creep:
+
 - {Item 1 - explicitly out of scope and why}
 - {Item 2 - explicitly out of scope and why}
 
@@ -424,11 +452,11 @@ Execute in order. Each task is atomic and independently verifiable.
 
 ### Unit Tests to Write
 
-| Test File | Test Cases | Validates |
-|-----------|-----------|-----------|
-| `src/features/new/tests/schemas.test.ts` | valid input, invalid input | Zod schemas |
-| `src/features/new/tests/errors.test.ts` | error properties | Error classes |
-| `src/features/new/tests/service.test.ts` | CRUD ops, access control | Business logic |
+| Test File                                | Test Cases                 | Validates      |
+| ---------------------------------------- | -------------------------- | -------------- |
+| `src/features/new/tests/schemas.test.ts` | valid input, invalid input | Zod schemas    |
+| `src/features/new/tests/errors.test.ts`  | error properties           | Error classes  |
+| `src/features/new/tests/service.test.ts` | CRUD ops, access control   | Business logic |
 
 ### Edge Cases Checklist
 
@@ -444,36 +472,49 @@ Execute in order. Each task is atomic and independently verifiable.
 ## Validation Commands
 
 ### Level 1: STATIC_ANALYSIS
+
 ```bash
 bun run lint && npx tsc --noEmit
 ```
+
 **EXPECT**: Exit 0, no errors or warnings
 
 ### Level 2: UNIT_TESTS
+
 ```bash
 bun test src/features/{feature}/tests/
 ```
+
 **EXPECT**: All tests pass, coverage >= 80%
 
 ### Level 3: FULL_SUITE
+
 ```bash
 bun test && bun run build
 ```
+
 **EXPECT**: All tests pass, build succeeds, dist/ created
 
 ### Level 4: DATABASE_VALIDATION (if schema changes)
+
 Use Supabase MCP to verify:
+mcp\_\_supabase
+
 - [ ] Table created with correct columns
 - [ ] RLS policies applied
 - [ ] Indexes created
 
 ### Level 5: BROWSER_VALIDATION (if UI changes)
-Use Browser MCP to verify:
+
+Use browsermcp to verify:
+mcp\_\_browsermcp
+
 - [ ] UI renders correctly
 - [ ] User flows work end-to-end
 - [ ] Error states display properly
 
 ### Level 6: MANUAL_VALIDATION
+
 {Step-by-step manual testing specific to this feature}
 
 ---
@@ -504,8 +545,8 @@ Use Browser MCP to verify:
 
 ## Risks and Mitigations
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
+| Risk               | Likelihood   | Impact       | Mitigation                              |
+| ------------------ | ------------ | ------------ | --------------------------------------- |
 | {Risk description} | LOW/MED/HIGH | LOW/MED/HIGH | {Specific prevention/handling strategy} |
 
 ---
@@ -513,7 +554,8 @@ Use Browser MCP to verify:
 ## Notes
 
 {Additional context, design decisions, trade-offs, future considerations}
-```
+
+````
 
 </process>
 
@@ -555,13 +597,15 @@ Use Browser MCP to verify:
 - {Rationale for score}
 
 **Next Step**: To execute, run: `/execute-plan .agents/plans/{feature-name}.plan.md`
-```
+````
+
 </output>
 
 <verification>
 **FINAL_VALIDATION before saving plan:**
 
 **CONTEXT_COMPLETENESS:**
+
 - [ ] All patterns from Explore agent documented with file:line references
 - [ ] External docs versioned to match package.json
 - [ ] Integration points mapped with specific file paths
@@ -569,12 +613,14 @@ Use Browser MCP to verify:
 - [ ] Every task has at least one executable validation command
 
 **IMPLEMENTATION_READINESS:**
+
 - [ ] Tasks ordered by dependency (can execute top-to-bottom)
 - [ ] Each task is atomic and independently testable
 - [ ] No placeholders - all content is specific and actionable
 - [ ] Pattern references include actual code snippets (copy-pasted, not invented)
 
 **PATTERN_FAITHFULNESS:**
+
 - [ ] Every new file mirrors existing codebase style exactly
 - [ ] No unnecessary abstractions introduced
 - [ ] Naming follows discovered conventions
@@ -582,11 +628,13 @@ Use Browser MCP to verify:
 - [ ] Test structure matches existing tests
 
 **VALIDATION_COVERAGE:**
+
 - [ ] Every task has executable validation command
 - [ ] All 6 validation levels defined where applicable
 - [ ] Edge cases enumerated with test plans
 
 **UX_CLARITY:**
+
 - [ ] Before/After ASCII diagrams are detailed and accurate
 - [ ] Data flows are traceable
 - [ ] User value is explicit and measurable

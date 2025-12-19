@@ -34,7 +34,39 @@ Plan file: @$ARGUMENTS
 
 ---
 
-## Phase 2: Execute Tasks
+## Phase 2: Branch Setup
+
+**Ensure you're on a feature branch before making changes:**
+
+1. **Check current branch:**
+   ```bash
+   git branch --show-current
+   ```
+
+2. **If on main, develop, staging, or other protected branch:**
+   - Extract feature name from plan title or filename
+   - Create a feature branch off main:
+   ```bash
+   git checkout main
+   git pull origin main
+   git checkout -b feat/{feature-name-from-plan}
+   ```
+
+3. **If already on a feature branch:**
+   - Verify it's the correct branch for this plan
+   - Continue to Phase 3
+
+**Branch naming convention:**
+- `feat/{feature-name}` for new features
+- `fix/{issue-name}` for bug fixes
+- Use kebab-case, derive name from plan title
+
+**Protected branches (never commit directly):**
+- `main`, `master`, `develop`, `staging`, `production`
+
+---
+
+## Phase 3: Execute Tasks
 
 **For each task in the Step-by-Step Tasks section:**
 
@@ -62,7 +94,7 @@ Plan file: @$ARGUMENTS
 
 ---
 
-## Phase 3: Run Validation Levels
+## Phase 4: Run Validation Levels
 
 **After all tasks complete, run each validation level:**
 
@@ -92,7 +124,7 @@ Execute manual validation steps from plan.
 
 ---
 
-## Phase 4: Commit Changes
+## Phase 5: Commit Changes
 
 **Create atomic commit:**
 
@@ -112,7 +144,7 @@ git commit -m "feat: {Feature name from plan}
 
 ---
 
-## Phase 5: Create Pull Request
+## Phase 6: Create Pull Request
 
 **Create PR with comprehensive description:**
 
