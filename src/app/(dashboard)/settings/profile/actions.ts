@@ -74,7 +74,7 @@ export async function updateProfileAction(
     logger.info({ userId: user.id }, "settings.profile.update_started");
 
     const profile = await getProfileByUserId(user.id);
-    await updateProfile(profile.id, result.data, user.id);
+    await updateProfile(profile.profileId, result.data, user.id);
 
     logger.info({ userId: user.id }, "settings.profile.update_completed");
 

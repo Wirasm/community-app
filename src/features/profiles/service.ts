@@ -37,7 +37,7 @@ export async function getProfileByUserId(userId: string): Promise<Profile> {
     throw new ProfileNotFoundError(userId);
   }
 
-  logger.info({ profileId: profile.id, userId }, "profile.get_by_user_id_completed");
+  logger.info({ profileId: profile.profileId, userId }, "profile.get_by_user_id_completed");
   return profile;
 }
 
@@ -55,7 +55,7 @@ export async function getProfileByUsername(username: string): Promise<Profile> {
     throw new ProfileNotFoundError(username);
   }
 
-  logger.info({ profileId: profile.id, username }, "profile.get_by_username_completed");
+  logger.info({ profileId: profile.profileId, username }, "profile.get_by_username_completed");
   return profile;
 }
 

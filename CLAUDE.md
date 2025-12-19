@@ -265,6 +265,23 @@ bunx shadcn@canary add dialog alert-dialog
 - Use `const` over `let` when possible
 - Path aliases: `@/*`, `@/core/*`, `@/features/*`, `@/shared/*` map to `./src/*`
 
+## Naming Conventions
+
+**Verbose ID naming** - Always use domain-prefixed IDs for clarity:
+```typescript
+// GOOD - Clear what each ID refers to
+logger.info({ profileId, communityId, userId }, "membership.create_started");
+const { profileId } = await params;
+function getProfile(profileId: string): Promise<Profile>
+
+// BAD - Ambiguous, especially with multiple IDs
+logger.info({ id, oderId, oderId2 }, "membership.create_started");
+const { id } = await params;
+function getProfile(id: string): Promise<Profile>
+```
+
+**Pattern**: `{domain}Id` (e.g., `projectId`, `profileId`, `communityId`, `postId`, `userId`)
+
 ## Rules That Will Fail Checks
 
 **Errors (must fix):**

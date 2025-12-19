@@ -127,7 +127,7 @@ describe("CheckUsernameSchema", () => {
 describe("ProfileResponseSchema", () => {
   it("validates complete profile response", () => {
     const profile = {
-      id: "550e8400-e29b-41d4-a716-446655440000",
+      profileId: "550e8400-e29b-41d4-a716-446655440000",
       userId: "550e8400-e29b-41d4-a716-446655440001",
       username: "johndoe",
       displayName: "John Doe",
@@ -147,7 +147,7 @@ describe("ProfileResponseSchema", () => {
 
   it("rejects invalid platformRole", () => {
     const profile = {
-      id: "550e8400-e29b-41d4-a716-446655440000",
+      profileId: "550e8400-e29b-41d4-a716-446655440000",
       userId: "550e8400-e29b-41d4-a716-446655440001",
       username: "johndoe",
       displayName: "John Doe",

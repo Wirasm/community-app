@@ -26,7 +26,7 @@ export async function GET(_request: NextRequest) {
 
     const profile = await getProfileByUserId(user.id);
 
-    logger.info({ profileId: profile.id, userId: user.id }, "profile.me.get_completed");
+    logger.info({ profileId: profile.profileId, userId: user.id }, "profile.me.get_completed");
 
     return NextResponse.json(profile);
   } catch (error) {
@@ -56,9 +56,9 @@ export async function PATCH(request: NextRequest) {
 
     // First get the profile to get profileId
     const existingProfile = await getProfileByUserId(user.id);
-    const profile = await updateProfile(existingProfile.id, input, user.id);
+    const profile = await updateProfile(existingProfile.profileId, input, user.id);
 
-    logger.info({ profileId: profile.id, userId: user.id }, "profile.me.update_completed");
+    logger.info({ profileId: profile.profileId, userId: user.id }, "profile.me.update_completed");
 
     return NextResponse.json(profile);
   } catch (error) {

@@ -10,7 +10,11 @@ import { profiles } from "./models";
 const logger = getLogger("profiles.repository");
 
 export async function findById(profileId: string): Promise<Profile | undefined> {
-  const results = await db.select().from(profiles).where(eq(profiles.id, profileId)).limit(1);
+  const results = await db
+    .select()
+    .from(profiles)
+    .where(eq(profiles.profileId, profileId))
+    .limit(1);
   return results[0];
 }
 
@@ -44,7 +48,7 @@ export async function create(data: NewProfile): Promise<Profile> {
     throw new ProfileCreationError(data.userId);
   }
 
-  logger.info({ profileId: profile.id, userId: data.userId }, "profile.create_completed");
+  logger.info({ profileId: profile.profileId, userId: data.userId }, "profile.create_completed");
   return profile;
 }
 
@@ -67,7 +71,7 @@ export async function update(
   const results = await db
     .update(profiles)
     .set({ ...data, updatedAt: new Date() })
-    .where(eq(profiles.id, profileId))
+    .where(eq(profiles.profileId, profileId))
     .returning();
   return results[0];
 }
@@ -81,7 +85,7 @@ export async function usernameExists(
   if (!existing) {
     return false;
   }
-  if (excludeProfileId && existing.id === excludeProfileId) {
+  if (excludeProfileId && existing.profileId === excludeProfileId) {
     return false;
   }
   return true;

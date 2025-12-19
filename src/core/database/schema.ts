@@ -63,7 +63,7 @@ export const platformRoleEnum = pgEnum("platform_role", ["admin", "user", "suspe
  * Profiles table - public profile data for users.
  */
 export const profiles = pgTable("profiles", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  profileId: uuid("profile_id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
     .notNull()
     .unique()

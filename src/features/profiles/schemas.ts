@@ -32,7 +32,7 @@ export const UpdateProfileSchema = z.object({
 export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>;
 
 export const ProfileResponseSchema = z.object({
-  id: z.string().uuid(),
+  profileId: z.string().uuid(),
   userId: z.string().uuid(),
   username: z.string(),
   displayName: z.string(),
