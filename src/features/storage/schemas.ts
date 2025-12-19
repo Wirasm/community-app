@@ -10,6 +10,9 @@ export const MAX_COMMUNITY_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 export const BUCKET_AVATARS = "avatars";
 export const BUCKET_COMMUNITIES = "communities";
 
+/** Community image types. */
+export type CommunityImageType = "logo" | "banner";
+
 /**
  * Get file extension from MIME type.
  */

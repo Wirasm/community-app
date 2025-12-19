@@ -11,7 +11,7 @@ export {
 // Hooks (client-side)
 export { useFileUpload } from "./hooks/use-file-upload";
 // Types and Schemas
-export type { AllowedImageType } from "./schemas";
+export type { AllowedImageType, CommunityImageType } from "./schemas";
 export {
   ALLOWED_IMAGE_TYPES,
   BUCKET_AVATARS,
@@ -22,7 +22,6 @@ export {
   MAX_COMMUNITY_IMAGE_SIZE,
 } from "./schemas";
 // Service functions (public API)
-export type { DeleteResult } from "./service";
 export {
   deleteAvatar,
   deleteCommunityImage,

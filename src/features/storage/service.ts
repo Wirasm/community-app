@@ -11,6 +11,7 @@ import {
   ALLOWED_IMAGE_TYPES,
   BUCKET_AVATARS,
   BUCKET_COMMUNITIES,
+  type CommunityImageType,
   getExtensionFromMimeType,
   isAllowedImageType,
   MAX_AVATAR_SIZE,
@@ -95,8 +96,14 @@ export async function uploadAvatar(profileId: string, file: File): Promise<strin
   const fileName = `${Date.now()}.${extension}`;
   const filePath = `${folderPath}/${fileName}`;
 
-  // Delete old avatar(s) in the folder
-  await deleteFolder(BUCKET_AVATARS, folderPath);
+  // Delete old avatar(s) in the folder (best-effort cleanup)
+  const deleteResult = await deleteFolder(BUCKET_AVATARS, folderPath);
+  if (!deleteResult.success) {
+    logger.warn(
+      { profileId, error: deleteResult.error },
+      "storage.upload_avatar_cleanup_failed_continuing",
+    );
+  }
 
   // Upload new file
   const { data, error } = await supabase.storage.from(BUCKET_AVATARS).upload(filePath, file, {
@@ -121,7 +128,7 @@ export async function uploadAvatar(profileId: string, file: File): Promise<strin
  */
 export async function uploadCommunityImage(
   communityId: string,
-  imageType: "logo" | "banner",
+  imageType: CommunityImageType,
   file: File,
 ): Promise<string> {
   logger.info(
@@ -137,8 +144,14 @@ export async function uploadCommunityImage(
   const fileName = `${Date.now()}.${extension}`;
   const filePath = `${folderPath}/${fileName}`;
 
-  // Delete old image(s) in the folder
-  await deleteFolder(BUCKET_COMMUNITIES, folderPath);
+  // Delete old image(s) in the folder (best-effort cleanup)
+  const deleteResult = await deleteFolder(BUCKET_COMMUNITIES, folderPath);
+  if (!deleteResult.success) {
+    logger.warn(
+      { communityId, imageType, error: deleteResult.error },
+      "storage.upload_community_image_cleanup_failed_continuing",
+    );
+  }
 
   // Upload new file
   const { data, error } = await supabase.storage.from(BUCKET_COMMUNITIES).upload(filePath, file, {
@@ -183,7 +196,7 @@ export async function deleteAvatar(profileId: string): Promise<void> {
  */
 export async function deleteCommunityImage(
   communityId: string,
-  imageType: "logo" | "banner",
+  imageType: CommunityImageType,
 ): Promise<void> {
   logger.info({ communityId, imageType }, "storage.delete_community_image_started");
 

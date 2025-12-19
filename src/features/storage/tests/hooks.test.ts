@@ -140,4 +140,110 @@ describe("useFileUpload", () => {
     expect(result.current.progress).toBe(0);
     expect(result.current.error).toBeNull();
   });
+
+  it("handles network exceptions", async () => {
+    (mockFetch as ReturnType<typeof mock>).mockImplementation(() =>
+      Promise.reject(new Error("Network failure")),
+    );
+
+    const { result } = renderHook(() => useFileUpload());
+    const validFile = createMockFile("avatar.jpg", 1024, "image/jpeg");
+
+    await act(async () => {
+      await result.current.upload("/api/upload/avatar", validFile);
+    });
+
+    expect(result.current.error).toBe("Network failure");
+    expect(result.current.isUploading).toBe(false);
+  });
+
+  it("handles non-Error exceptions with fallback message", async () => {
+    (mockFetch as ReturnType<typeof mock>).mockImplementation(() => Promise.reject("string error"));
+
+    const { result } = renderHook(() => useFileUpload());
+    const validFile = createMockFile("avatar.jpg", 1024, "image/jpeg");
+
+    await act(async () => {
+      await result.current.upload("/api/upload/avatar", validFile);
+    });
+
+    expect(result.current.error).toBe("Upload failed");
+  });
+
+  it("respects custom maxSize option", async () => {
+    const customMaxSize = 10 * 1024; // 10KB
+    const { result } = renderHook(() => useFileUpload({ maxSize: customMaxSize }));
+
+    const oversizedFile = createMockFile("big.jpg", customMaxSize + 1, "image/jpeg");
+
+    await act(async () => {
+      await result.current.upload("/api/upload/avatar", oversizedFile);
+    });
+
+    // Should reject the file - it exceeds custom limit, not default 2MB limit
+    expect(result.current.error).toContain("exceeds maximum size");
+    expect(result.current.error).not.toContain("2MB"); // Should NOT be default limit
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("calls onError callback on HTTP error", async () => {
+    (mockFetch as ReturnType<typeof mock>).mockImplementation(() =>
+      Promise.resolve({
+        ok: false,
+        status: 500,
+        statusText: "Internal Server Error",
+        json: () => Promise.resolve({ error: "Server error" }),
+      }),
+    );
+
+    const onError = mock(() => {});
+    const { result } = renderHook(() => useFileUpload({ onError }));
+    const validFile = createMockFile("avatar.jpg", 1024, "image/jpeg");
+
+    await act(async () => {
+      await result.current.upload("/api/upload/avatar", validFile);
+    });
+
+    expect(onError).toHaveBeenCalledWith("Server error");
+  });
+
+  it("uses fallback error message when response has no error field", async () => {
+    (mockFetch as ReturnType<typeof mock>).mockImplementation(() =>
+      Promise.resolve({
+        ok: false,
+        status: 400,
+        statusText: "Bad Request",
+        json: () => Promise.resolve({}),
+      }),
+    );
+
+    const { result } = renderHook(() => useFileUpload());
+    const validFile = createMockFile("avatar.jpg", 1024, "image/jpeg");
+
+    await act(async () => {
+      await result.current.upload("/api/upload/avatar", validFile);
+    });
+
+    expect(result.current.error).toBe("Upload failed (HTTP 400)");
+  });
+
+  it("handles non-JSON error response gracefully", async () => {
+    (mockFetch as ReturnType<typeof mock>).mockImplementation(() =>
+      Promise.resolve({
+        ok: false,
+        status: 502,
+        statusText: "Bad Gateway",
+        json: () => Promise.reject(new SyntaxError("Unexpected token '<'")),
+      }),
+    );
+
+    const { result } = renderHook(() => useFileUpload());
+    const validFile = createMockFile("avatar.jpg", 1024, "image/jpeg");
+
+    await act(async () => {
+      await result.current.upload("/api/upload/avatar", validFile);
+    });
+
+    expect(result.current.error).toBe("Upload failed: 502 Bad Gateway");
+  });
 });

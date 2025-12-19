@@ -45,8 +45,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       });
     }
 
-    // Get community and verify ownership (handled by updateCommunity)
+    // Get community and verify ownership BEFORE uploading
     const community = await getCommunityBySlug(slug);
+
+    if (community.ownerId !== user.id) {
+      logger.warn(
+        { userId: user.id, communityId: community.communityId, ownerId: community.ownerId },
+        "upload.community_banner_unauthorized",
+      );
+      return NextResponse.json(
+        createErrorResponse("Not authorized to modify this community", "UNAUTHORIZED"),
+        { status: 403 },
+      );
+    }
 
     // Upload to storage
     const url = await uploadCommunityImage(community.communityId, "banner", file);

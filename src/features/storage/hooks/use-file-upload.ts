@@ -63,25 +63,29 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
       const formData = new FormData();
       formData.append("file", file);
 
-      try {
-        // Simulate progress for small files (standard upload doesn't support real progress)
-        const progressInterval = setInterval(() => {
-          setState((prev) => ({
-            ...prev,
-            progress: Math.min(prev.progress + 15, 90),
-          }));
-        }, 200);
+      // Simulate progress for small files (standard upload doesn't support real progress)
+      const progressInterval = setInterval(() => {
+        setState((prev) => ({
+          ...prev,
+          progress: Math.min(prev.progress + 15, 90),
+        }));
+      }, 200);
 
+      try {
         const response = await fetch(endpoint, {
           method: "POST",
           body: formData,
         });
 
-        clearInterval(progressInterval);
-
         if (!response.ok) {
-          const data = await response.json();
-          const errorMessage = data.error || "Upload failed";
+          let errorMessage = `Upload failed (HTTP ${response.status})`;
+          try {
+            const data = await response.json();
+            errorMessage = data.error || errorMessage;
+          } catch {
+            // Response is not JSON - use status text
+            errorMessage = `Upload failed: ${response.status} ${response.statusText}`;
+          }
           setState({ isUploading: false, progress: 0, error: errorMessage, url: null });
           onError?.(errorMessage);
           return null;
@@ -96,6 +100,8 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
         setState({ isUploading: false, progress: 0, error: message, url: null });
         onError?.(message);
         return null;
+      } finally {
+        clearInterval(progressInterval);
       }
     },
     [validateFile, onSuccess, onError],
