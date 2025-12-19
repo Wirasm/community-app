@@ -1,12 +1,23 @@
 import { z } from "zod/v4";
 
+/** Valid platform roles for user access levels. Shared between database schema and Zod validation. */
+export const PLATFORM_ROLES = ["admin", "user", "suspended"] as const;
+export type PlatformRole = (typeof PLATFORM_ROLES)[number];
+
+/** Username validation constraints. */
+export const USERNAME_MIN_LENGTH = 3;
+export const USERNAME_MAX_LENGTH = 30;
+export const USERNAME_PATTERN = /^[a-z0-9_]+$/;
+
+/** Reusable username schema for validation. */
+export const usernameSchema = z
+  .string()
+  .min(USERNAME_MIN_LENGTH, `Username must be at least ${USERNAME_MIN_LENGTH} characters`)
+  .max(USERNAME_MAX_LENGTH, `Username must be at most ${USERNAME_MAX_LENGTH} characters`)
+  .regex(USERNAME_PATTERN, "Username can only contain lowercase letters, numbers, and underscores");
+
 export const UpdateProfileSchema = z.object({
-  username: z
-    .string()
-    .min(3, "Username must be at least 3 characters")
-    .max(30, "Username must be at most 30 characters")
-    .regex(/^[a-z0-9_]+$/, "Username can only contain lowercase letters, numbers, and underscores")
-    .optional(),
+  username: usernameSchema.optional(),
   displayName: z
     .string()
     .min(1, "Display name is required")
@@ -31,7 +42,7 @@ export const ProfileResponseSchema = z.object({
   location: z.string().nullable(),
   website: z.string().nullable(),
   socialLinks: z.record(z.string(), z.string()),
-  platformRole: z.enum(["admin", "user", "suspended"]),
+  platformRole: z.enum(PLATFORM_ROLES),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
@@ -39,11 +50,7 @@ export const ProfileResponseSchema = z.object({
 export type ProfileResponse = z.infer<typeof ProfileResponseSchema>;
 
 export const CheckUsernameSchema = z.object({
-  username: z
-    .string()
-    .min(3, "Username must be at least 3 characters")
-    .max(30, "Username must be at most 30 characters")
-    .regex(/^[a-z0-9_]+$/, "Username can only contain lowercase letters, numbers, and underscores"),
+  username: usernameSchema,
 });
 
 export type CheckUsernameInput = z.infer<typeof CheckUsernameSchema>;

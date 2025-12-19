@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 
 import {
   ProfileAccessDeniedError,
+  ProfileCreationError,
   ProfileError,
   ProfileNotFoundError,
   UsernameExistsError,
@@ -63,6 +64,21 @@ describe("ProfileAccessDeniedError", () => {
 
   it("is instanceof ProfileError", () => {
     const error = new ProfileAccessDeniedError("profile-123");
+    expect(error).toBeInstanceOf(ProfileError);
+  });
+});
+
+describe("ProfileCreationError", () => {
+  it("creates error with correct defaults", () => {
+    const error = new ProfileCreationError("user-123");
+    expect(error.message).toBe("Failed to create profile for user: user-123");
+    expect(error.code).toBe("PROFILE_CREATION_FAILED");
+    expect(error.statusCode).toBe(500);
+    expect(error.name).toBe("ProfileCreationError");
+  });
+
+  it("is instanceof ProfileError", () => {
+    const error = new ProfileCreationError("user-123");
     expect(error).toBeInstanceOf(ProfileError);
   });
 });
